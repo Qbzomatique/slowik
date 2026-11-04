@@ -1,6 +1,11 @@
 # Słowik: konta, logowanie przez Discorda i rankingi
 
-Dokument analityczny. Wersja 1.0, 4 listopada 2026. Status: **do akceptacji**.
+Dokument analityczny. Wersja 1.1, 4 listopada 2026. Status: **zaakceptowany**.
+
+| Wersja | Data | Zmiany |
+|---|---|---|
+| 1.0 | 2026-11-04 | Pierwsza wersja |
+| 1.1 | 2026-11-04 | Mierniki liczone z bazy; świadome zatwierdzenie nicku (`nick_confirmed`, privacy by design); ograniczenie L9 (wiek graczy); etap ukrycia haseł w planie |
 
 ## 1. Cel
 
@@ -8,11 +13,13 @@ Słowik to dziś statyczna gra: wynik i statystyki zostają w przeglądarce grac
 
 Cel tego etapu: **opcjonalne konto przez Discorda, dzięki któremu wynik słowa dnia trafia do wspólnego rankingu**. Gra bez logowania działa dokładnie tak jak dziś.
 
-Mierniki sukcesu (do sprawdzenia po miesiącu):
+Mierniki sukcesu (do sprawdzenia po miesiącu). Wszystkie są liczone zapytaniem SQL z bazy, bez analityki w przeglądarce:
 
-- odsetek graczy słowa dnia, którzy się zalogowali,
-- liczba zalogowanych graczy z wynikiem w rankingu dnia,
-- zero zgłoszeń, że gra nie działa przez awarię backendu (gra ma działać offline).
+- **liczba kont:** wiersze w `profiles`,
+- **liczba wyników dziennie:** wiersze w `results` na każdy `day`,
+- **retencja 7-dniowa:** odsetek graczy z wynikiem w dniu D, którzy mają też wynik w dniu D+7 (średnio po dniach D, dla których dzień D+7 już minął).
+
+Wymaganie jakościowe: zero zgłoszeń, że gra nie działa przez awarię backendu (gra ma działać offline).
 
 ### Zakres
 
@@ -71,8 +78,10 @@ flowchart LR
 > Jako gracz z Discorda chcę zalogować się jednym kliknięciem, żeby mój wynik trafiał do rankingu.
 
 - W nagłówku jest przycisk „Zaloguj przez Discord”. Po zalogowaniu na jego miejscu pojawia się nick i menu: zmień nick, wyloguj, usuń konto.
-- Przy pierwszym logowaniu powstaje profil z nickiem z nazwy Discorda. Jeśli nick jest zajęty, system dopisuje do niego liczbę.
-- Nick można zmienić: 3–20 znaków, litery (także polskie), cyfry, spacja, `_`, `-`. Wielkość liter nie odróżnia nicków („Ala” i „ala” to ten sam nick).
+- Przy pierwszym logowaniu powstaje profil z **niezatwierdzonym** nickiem utworzonym z nazwy Discorda. Jeśli nick jest zajęty, system dopisuje do niego liczbę.
+- Zaraz po pierwszym logowaniu otwiera się okno „Wybierz nick, będzie widoczny publicznie w rankingu” z tą podpowiedzią w polu do edycji. Gracz zatwierdza nick świadomie, a może go też zmienić. Okno można zamknąć i wrócić do niego z menu konta.
+- Dopóki nick nie jest zatwierdzony, wyniki się zapisują, ale gracz **nie pojawia się w rankingach**. Przy nicku w nagłówku widać przypomnienie „zatwierdź nick, żeby trafić do rankingu”.
+- Nick można później zmienić: 3–20 znaków, litery (także polskie), cyfry, spacja, `_`, `-`. Wielkość liter nie odróżnia nicków („Ala” i „ala” to ten sam nick). Każda zmiana przez okno nicku oznacza nick jako zatwierdzony.
 - Po skończeniu słowa dnia, czyli po wygranej albo sześciu próbach, wynik wysyła się automatycznie. Gracz widzi potwierdzenie albo komunikat o błędzie.
 - Jeśli gracz zaloguje się dopiero po dzisiejszej grze, wynik z localStorage wysyła się po zalogowaniu.
 - Drugi wynik na ten sam dzień jest odrzucany, a gracz widzi wynik zapisany wcześniej. Gra lokalna nie jest przez to przerywana.
@@ -108,12 +117,13 @@ Zasada: **minimum danych**. Trzymamy tylko to, co jest potrzebne do rankingu.
 |---|---|---|---|
 | Identyfikator konta (UUID) | `auth.users`, `profiles.id`, `results.user_id` | Powiązanie wyników z kontem | Tylko właściciel i administrator |
 | Identyfikator Discorda, nazwa, awatar (URL), **adres e-mail** | `auth.users` i `auth.identities` (zarządza Supabase Auth) | Logowanie. Supabase pobiera e-mail z Discorda obowiązkowo, a gra go nie używa ani nie kopiuje do swoich tabel. | Tylko administrator (panel Supabase) |
-| Nick | `profiles.nick` | Wyświetlanie w rankingu | **Publicznie** w rankingach |
+| Nick i znacznik zatwierdzenia | `profiles.nick`, `profiles.nick_confirmed` | Wyświetlanie w rankingu | **Publicznie** w rankingach, ale dopiero po zatwierdzeniu przez gracza |
 | Wyniki słowa dnia: dzień, próby, liczba prób, wygrana, tryb trudny, czas zapisu | `results` | Ranking i walidacja wyniku | Próby: tylko właściciel. Liczby: publicznie przez rankingi. |
 | Adres IP, user agent | Logi Supabase (API i Auth) | Bezpieczeństwo, diagnostyka | Administrator. Retencja na darmowym planie: 1 dzień (logi API/DB), 1 godzina (audyt Auth). |
 | Sesja (token) | localStorage przeglądarki, klucz `slowik.auth` | Utrzymanie zalogowania | Tylko przeglądarka gracza |
 
 - **Podstawa prawna:** art. 6 ust. 1 lit. b RODO, czyli świadczenie usługi, o którą gracz prosi, zakładając konto. Publiczny nick w rankingu jest istotą tej usługi, o czym gracz jest informowany przed zalogowaniem.
+- **Privacy by design i by default (art. 25 RODO):** pole `global_name` z Discorda to często prawdziwe imię i nazwisko. Dlatego nic nie trafia do publicznego rankingu automatycznie. Nick z Discorda jest tylko podpowiedzią, a domyślne ustawienie to „niewidoczny” (`nick_confirmed = false`). Upublicznienie wymaga świadomego działania gracza w oknie, które mówi wprost, że nick będzie widoczny publicznie.
 - **Podmiot przetwarzający:** Supabase Inc. ma umowę powierzenia (DPA) w ramach regulaminu, a dane są w regionie UE. Discord jest odrębnym administratorem danych konta Discord.
 - **Prawa gracza:** usunięcie danych przez „Usuń konto”. Sprostowanie przez zmianę nicku. Dostęp: gracz widzi swoje wyniki, a pełną kopię danych wydaje administrator na prośbę (eksport w aplikacji to przyszły krok).
 - **Retencja:** dane są przechowywane do usunięcia konta. Polityka usuwania kont nieaktywnych zostanie ustalona przed publicznym ogłoszeniem rankingów.
@@ -157,6 +167,7 @@ erDiagram
   PROFILES {
     uuid id PK "= auth.users.id"
     text nick "unikalny bez względu na wielkość liter, 3-20 znaków"
+    boolean nick_confirmed "domyślnie false; true po zatwierdzeniu przez gracza"
     timestamptz created_at
   }
   RESULTS {
@@ -172,7 +183,8 @@ erDiagram
 
 - `results` ma klucz główny `(user_id, day)`, co oznacza jeden wynik na dzień.
 - Ograniczenia `CHECK`: `attempts` między 1 a 6 i równe `cardinality(guesses)`. Każda próba pasuje do `^[a-ząćęłńóśźż]{5}$`. Przegrana oznacza dokładnie 6 prób.
-- Profil tworzy trigger po założeniu konta w `auth.users`. Nick bierze z `global_name` lub `full_name` z danych Discorda, oczyszcza go z niedozwolonych znaków i przy kolizji dopisuje numer.
+- Profil tworzy trigger po założeniu konta w `auth.users`. Nick bierze z `global_name` lub `full_name` z danych Discorda, oczyszcza go z niedozwolonych znaków i przy kolizji dopisuje numer. Gdy po oczyszczeniu zostaje mniej niż 3 znaki, nick to `gracz` z numerem. Profil zawsze startuje z `nick_confirmed = false`.
+- Gracz z `nick_confirmed = false` nie występuje w żadnym rankingu, ale jego wyniki są zapisywane. Po zatwierdzeniu nicku pojawia się w rankingach, także z wcześniejszymi wynikami.
 - Szacunek rozmiaru: wiersz `results` ma około 150 B. Przy 1000 graczy dziennie przez rok to około 55 MB, mieści się w limicie 500 MB.
 
 ### Funkcje (RPC)
@@ -180,9 +192,9 @@ erDiagram
 | Funkcja | Kto | Co robi |
 |---|---|---|
 | `submit_result(day, guesses, won, hard_mode)` | `authenticated` | Waliduje i zapisuje wynik bieżącego użytkownika. Zwraca zapisany wiersz albo istniejący, gdy wynik na ten dzień już jest. |
-| `ranking_day(day)` | `anon`, `authenticated` | Ranking jednego dnia: miejsce, nick, próby, tryb trudny. |
-| `ranking_overall(limit)` | `anon`, `authenticated` | Ranking ogólny: nick, gry, wygrane, % wygranych, najdłuższa seria. |
-| `set_nick(nick)` | `authenticated` | Zmiana własnego nicku z walidacją i komunikatem o zajętym nicku. |
+| `ranking_day(day)` | `anon`, `authenticated` | Ranking jednego dnia: miejsce, nick, próby, tryb trudny. Tylko gracze z `nick_confirmed = true`. |
+| `ranking_overall(limit)` | `anon`, `authenticated` | Ranking ogólny: nick, gry, wygrane, % wygranych, najdłuższa seria. Tylko gracze z `nick_confirmed = true`. |
+| `set_nick(nick)` | `authenticated` | Ustawia i zatwierdza własny nick (`nick_confirmed = true`). Waliduje go i zwraca czytelny błąd, gdy nick jest zajęty. |
 | `delete_my_account()` | `authenticated` | Usuwa wiersz w `auth.users` bieżącego użytkownika. Kaskada usuwa profil i wyniki. |
 
 Walidacja w `submit_result`:
@@ -202,7 +214,7 @@ Domyślnie (RLS włączone, brak polityk) klient nie może niczego. Dopuszczamy 
 | Tabela | Operacja | Kto | Warunek | Uzasadnienie |
 |---|---|---|---|---|
 | `profiles` | SELECT | `authenticated` | `id = auth.uid()` | Gracz widzi swój profil. Cudze nicki są widoczne tylko przez funkcje rankingów. |
-| `profiles` | UPDATE | brak | — | Zmiana nicku tylko przez `set_nick` (walidacja i czytelny błąd przy zajętym nicku). |
+| `profiles` | UPDATE | brak | — | Zmiana i zatwierdzenie nicku tylko przez `set_nick` (walidacja, czytelny błąd przy zajętym nicku). Klient nie może sam ustawić `nick_confirmed`. |
 | `profiles` | INSERT, DELETE | brak | — | Profil tworzy trigger, a usuwa kaskada z `delete_my_account`. |
 | `results` | SELECT | `authenticated` | `user_id = auth.uid()` | Gracz widzi swoje wyniki i próby. Cudzych prób nie widzi nikt. |
 | `results` | INSERT, UPDATE, DELETE | brak | — | Zapis tylko przez `submit_result`. Wyniku nie da się zmienić ani usunąć pojedynczo. |
@@ -221,6 +233,7 @@ Funkcje `SECURITY DEFINER` działają z prawami właściciela i omijają RLS, dl
 | L6 | Brak automatycznych kopii zapasowych na darmowym planie | Utrata rankingów przy awarii lub błędzie. | Akceptujemy na etapie testów. | Okresowy zrzut `pg_dump` lub plan płatny. |
 | L7 | Brak limitu liczby wywołań RPC | Ktoś może masowo wywoływać rankingi. | Funkcje są lekkie, wyniki ograniczone do 100 wierszy. | Cache lub limity w Edge Function. |
 | L8 | Supabase przechowuje e-mail z Discorda | Więcej danych niż potrzeba. | Nie kopiujemy go ani nie używamy, a polityka prywatności o nim mówi. | Sprawdzić, czy da się zawęzić zakresy OAuth. |
+| L9 | **Gracze poniżej 16 lat.** Discord dopuszcza konta od 13 lat, a w Polsce zgodę na usługi online może samodzielnie wyrazić osoba od 16 lat (art. 8 RODO). | Część graczy może być niepełnoletnia. Przetwarzanie opiera się na usłudze (lit. b), nie na zgodzie, ale wymaga to potwierdzenia. | Minimum danych, nick niewidoczny bez świadomego zatwierdzenia, łatwe usunięcie konta. | Wyjaśnić przy pełnej polityce prywatności, **przed szerszym ogłoszeniem**. |
 
 ## 9. Lista kontrolna ręcznych testów RLS
 
@@ -246,6 +259,8 @@ Do przejścia razem po wdrożeniu migracji. Testy są wykonywane z konsoli przeg
 | R16 | Rankingi nie zawierają `user_id`, prób, e-maila ani danych Discorda | Potwierdzone | — |
 | R17 | A: `delete_my_account` | Konto, profil i wyniki A znikają, B bez zmian | — |
 | R18 | Po R17 stary token A: `submit_result` | Błąd | — |
+| R19 | Nowy gracz C bez zatwierdzonego nicku: `submit_result`, potem `ranking_day` i `ranking_overall` | Wynik C zapisany, ale C nie występuje w żadnym rankingu | — |
+| R20 | C: `set_nick`, potem rankingi | C pojawia się w rankingach razem z wcześniejszym wynikiem | — |
 
 ## 10. Limity darmowego planu Supabase
 
@@ -274,5 +289,6 @@ Stan na 4 listopada 2026 według [cennika Supabase](https://supabase.com/pricing
 | 2 | Migracje SQL w `supabase/migrations/`, przegląd, wklejenie do bazy, testy RLS z rozdziału 9 | Asystent pisze, autor akceptuje i uruchamia |
 | 3 | Frontend: logowanie, menu konta, wysyłka wyniku, zakładki rankingów, nota o danych | Asystent |
 | 4 | Testy klienta z mockiem Supabase, README (architektura), CLAUDE.md, wyniki testów RLS w tym dokumencie | Asystent |
+| Etap następny | Przed publicznym ogłoszeniem rankingów: ukrycie haseł (L1–L3) | Do zaplanowania |
 
 Po każdym kroku jest commit na `main`, a testy CI pozostają zielone.
