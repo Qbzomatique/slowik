@@ -12,7 +12,7 @@
   --bg:#F3F5F9; --surface:#FFFFFF; --fg:#17202D; --muted:#5E6878;
   --line:#CBD2DD; --line-strong:#8C96A6;
   --hit:#2B8A66; --near:#D19A16; --miss:#6E7787; --on-tile:#FFFFFF;
-  --key:#D3D9E3; --key-miss:#7B8494; --key-miss-fg:#FFFFFF; --accent:#2B5BD7;
+  --key:#D3D9E3; --key-miss:#7B8494; --key-miss-fg:#FFFFFF; --accent:#2B5BD7; --danger:#C2412D;
   --display:"Unbounded","Rubik",system-ui,sans-serif;
   --body:"Rubik",system-ui,-apple-system,"Segoe UI",sans-serif;
 }
@@ -20,12 +20,12 @@
   --bg:#0E131B; --surface:#171E29; --fg:#E7EBF1; --muted:#97A1B2;
   --line:#2E3847; --line-strong:#5A6576;
   --hit:#2F9E74; --near:#C8961E; --miss:#3B4555; --on-tile:#FFFFFF;
-  --key:#5A6577; --key-miss:#1C222B; --key-miss-fg:#6C7686; --accent:#7EA2FF; color-scheme:dark }}
+  --key:#5A6577; --key-miss:#1C222B; --key-miss-fg:#6C7686; --accent:#7EA2FF; --danger:#E0664F; color-scheme:dark }}
 :root[data-theme="dark"]{
   --bg:#0E131B; --surface:#171E29; --fg:#E7EBF1; --muted:#97A1B2;
   --line:#2E3847; --line-strong:#5A6576;
   --hit:#2F9E74; --near:#C8961E; --miss:#3B4555; --on-tile:#FFFFFF;
-  --key:#5A6577; --key-miss:#1C222B; --key-miss-fg:#6C7686; --accent:#7EA2FF; color-scheme:dark }
+  --key:#5A6577; --key-miss:#1C222B; --key-miss-fg:#6C7686; --accent:#7EA2FF; --danger:#E0664F; color-scheme:dark }
 body.cb{ --hit:#E0742B; --near:#3E8FE0; }
 
 *,*::before,*::after{box-sizing:border-box}
@@ -113,11 +113,38 @@ main{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;
 .sw:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 textarea#sharebox{width:100%;margin-top:10px;font:13px/1.4 var(--body);background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:8px}
 @media (max-height:640px){.key{height:44px}}
+
+/* konto i ranking */
+.acct{border:1px solid var(--line);background:transparent;border-radius:999px;height:36px;padding:0 12px;font-size:13px;font-weight:500;
+  display:inline-flex;align-items:center;gap:6px;max-width:220px;position:relative}
+.acct svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.acct span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acct:hover{background:var(--key)}
+.acct .dot{position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:var(--near)}
+@media (max-width:479px){.acct{width:36px;padding:0;justify-content:center;border-color:transparent}.acct span{display:none}}
+.tabs{display:flex;gap:4px;margin:0 0 16px;border-bottom:1px solid var(--line)}
+.tabs button{border:0;background:transparent;padding:8px 10px;font-size:13px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--fg)}
+.rank{width:100%;border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums}
+.rank th{text-align:left;font-weight:500;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:4px 6px;border-bottom:1px solid var(--line)}
+.rank td{padding:7px 6px;border-bottom:1px solid var(--line)}
+.rank td.n,.rank th.n{text-align:right}
+.rank td.nick{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rank tr.me td{background:color-mix(in srgb,var(--hit) 16%,transparent);font-weight:600}
+.muted{color:var(--muted);font-size:13.5px}
+.field{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line-strong);border-radius:8px;background:var(--bg);color:var(--fg);margin:4px 0 6px}
+.field:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.err{color:var(--danger);font-size:13.5px;min-height:1.2em;margin:0 0 8px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.btn.danger{background:var(--danger)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.linkbtn{border:0;background:transparent;padding:0;color:var(--danger);font-size:13.5px;text-decoration:underline;margin-top:16px}
 </style>
 </head>
 <body>
 <header>
   <div class="brand">Słowik <small id="sub">słowo dnia #1</small></div>
+  <button class="acct" id="bAcct" aria-label="Zaloguj przez Discord"><svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg><span>Zaloguj przez Discord</span></button>
   <button class="icon" id="bHelp" aria-label="Jak grać"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 0 1 4.9.7c0 1.7-2.4 2.1-2.4 3.8"/><path d="M12 17h.01"/></svg></button>
   <button class="icon" id="bStats" aria-label="Statystyki"><svg viewBox="0 0 24 24"><path d="M5 20V11M12 20V5M19 20v-6"/></svg></button>
   <button class="icon" id="bSet" aria-label="Ustawienia"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg></button>
@@ -144,6 +171,8 @@ textarea#sharebox{width:100%;margin-top:10px;font:13px/1.4 var(--body);backgroun
   <h3>Tryby</h3>
   <p>Próba musi być prawdziwym słowem, w dowolnej formie: <b>kotki</b> albo <b>pisze</b> też przejdą.</p>
   <p><b>Słowo dnia</b> jest jedno dla wszystkich i zmienia się o północy. <b>Trening</b> losuje nowe słowo bez limitu i nie liczy się do statystyk.</p>
+  <h3>Konto i ranking</h3>
+  <p style="font-size:13.5px">Logowanie przez Discorda jest opcjonalne i daje udział w rankingu. Zapisujemy wtedy tylko: identyfikator konta, nick (widoczny w rankingu dopiero po Twoim zatwierdzeniu) i wyniki słowa dnia. Discord przekazuje też nazwę i e-mail; nie pokazujemy ich nigdzie. Trening nie trafia do rankingu. Konto ze wszystkimi danymi usuniesz w menu konta.</p>
   <h3>Słownik</h3>
   <p style="font-size:13px;color:var(--muted)">Słownik do gier <a href="https://sjp.pl" style="color:var(--accent)">SJP.PL</a>, licencja CC BY 4.0.</p>
 </div></div>
@@ -151,11 +180,54 @@ textarea#sharebox{width:100%;margin-top:10px;font:13px/1.4 var(--body);backgroun
 <div class="scrim" id="dStats" hidden><div class="modal" role="dialog" aria-labelledby="hStats">
   <button class="icon close" data-close aria-label="Zamknij"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
   <div id="result"></div>
-  <h2 id="hStats">Statystyki</h2>
-  <div class="stats" id="statNums"></div>
-  <h3>Rozkład prób</h3>
-  <div class="dist" id="dist"></div>
-  <div class="end" id="endRow"></div>
+  <div class="tabs" role="tablist" aria-label="Statystyki i rankingi">
+    <button role="tab" id="tMine" data-tab="mine" aria-selected="true" aria-controls="pMine">Moje</button>
+    <button role="tab" id="tDay" data-tab="day" aria-selected="false" aria-controls="pDay">Ranking dnia</button>
+    <button role="tab" id="tAll" data-tab="all" aria-selected="false" aria-controls="pAll">Ranking ogólny</button>
+  </div>
+  <section id="pMine" role="tabpanel" aria-labelledby="tMine">
+    <h2 id="hStats">Statystyki</h2>
+    <div class="stats" id="statNums"></div>
+    <h3>Rozkład prób</h3>
+    <div class="dist" id="dist"></div>
+    <div class="end" id="endRow"></div>
+  </section>
+  <section id="pDay" role="tabpanel" aria-labelledby="tDay" hidden></section>
+  <section id="pAll" role="tabpanel" aria-labelledby="tAll" hidden></section>
+</div></div>
+
+<div class="scrim" id="dAcct" hidden><div class="modal" role="dialog" aria-labelledby="hAcct">
+  <button class="icon close" data-close aria-label="Zamknij"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <h2 id="hAcct">Konto</h2>
+  <p>Zalogowano jako <b id="acctNick"></b>.</p>
+  <p class="muted" id="acctNote"></p>
+  <div class="actions"><button class="btn" id="acctNickBtn">Zmień nick</button><button class="btn ghost" id="acctOut">Wyloguj</button></div>
+  <button class="linkbtn" id="acctDel">Usuń konto</button>
+</div></div>
+
+<div class="scrim" id="dNick" hidden><div class="modal" role="dialog" aria-labelledby="hNick">
+  <button class="icon close" data-close aria-label="Zamknij"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <h2 id="hNick">Wybierz nick</h2>
+  <form id="nickForm" novalidate>
+    <p><b>Będzie widoczny publicznie w rankingu.</b> Podpowiedź pochodzi z Discorda, możesz ją zmienić.</p>
+    <label class="muted" for="nickIn">Nick (3–20 znaków: litery, cyfry, spacja, _ lub -)</label>
+    <input class="field" id="nickIn" maxlength="20" autocomplete="off" spellcheck="false">
+    <p class="err" id="nickErr" aria-live="polite"></p>
+    <div class="actions"><button class="btn" type="submit">Zatwierdź</button><button class="btn ghost" type="button" data-close>Później</button></div>
+  </form>
+</div></div>
+
+<div class="scrim" id="dDel" hidden><div class="modal" role="dialog" aria-labelledby="hDel">
+  <button class="icon close" data-close aria-label="Zamknij"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <h2 id="hDel">Usuń konto</h2>
+  <form id="delForm" novalidate>
+    <p>Usuniemy konto, nick i wszystkie zapisane wyniki. Nie da się tego cofnąć.</p>
+    <p class="muted">Lokalne statystyki w tej przeglądarce zostaną.</p>
+    <label class="muted" for="delIn">Wpisz <b>usuń</b>, żeby potwierdzić</label>
+    <input class="field" id="delIn" autocomplete="off" spellcheck="false">
+    <p class="err" id="delErr" aria-live="polite"></p>
+    <div class="actions"><button class="btn danger" type="submit" id="delGo" disabled>Usuń konto</button><button class="btn ghost" type="button" data-close>Anuluj</button></div>
+  </form>
 </div></div>
 
 <div class="scrim" id="dSet" hidden><div class="modal" role="dialog" aria-labelledby="hSet">
@@ -185,6 +257,126 @@ function score(guess,answer){
   for(let i=0;i<5;i++){if(res[i]!=='hit'&&left[g[i]]){res[i]='near';left[g[i]]--}}
   return res;
 }
+
+// online:start
+/* Konto i ranking (Supabase). Logika bez DOM, żeby testy mogły ją uruchomić z atrapą klienta.
+   Wszystko jest opcjonalne: bez sieci gra działa dalej na localStorage. */
+const SUPABASE_URL='https://prqmfzsvlskrttyoqbat.supabase.co';
+const SUPABASE_KEY='sb_publishable_iRn2SepcsSPdtg_GUS2NeQ_O9BpRKn2'; // klucz publiczny; dane chroni RLS
+const OUR_ERRORS=['22023','28000','23505','P0002']; // błędy z naszych funkcji SQL, z komunikatem po polsku
+
+// Wynik do wysłania albo null (trening i niedokończona gra nigdy nie trafiają do rankingu).
+function buildPayload(game,mode){
+  if(mode!=='daily'||!game||!(game.day>=1)||game.status==='playing')return null;
+  if(!Array.isArray(game.guesses)||!game.guesses.length)return null;
+  return {p_day:game.day,p_guesses:game.guesses.slice(),p_won:game.status==='won',p_hard_mode:!!game.hard};
+}
+
+function onlineError(err){
+  if(err&&OUR_ERRORS.includes(err.code))return err.message;
+  if(err&&err.code==='TIMEOUT')return 'Serwer rankingu nie odpowiada. Gra działa dalej.';
+  if(err&&/fetch|network|load failed/i.test(err.message||''))return 'Brak połączenia z serwerem rankingu. Gra działa dalej.';
+  return 'Serwer rankingu ma problem. Gra działa dalej.';
+}
+
+function createOnline({store,dayNumber,loadClient,timeoutMs=8000}){
+  let client=null,session=null,profile=null;
+  const listeners=[];
+  const emit=(type,data)=>listeners.forEach(f=>{try{f(type,data)}catch(e){}});
+  const withTimeout=p=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej({code:'TIMEOUT'}),timeoutMs))]);
+  async function call(fn,args){
+    try{const {data,error}=await withTimeout(client.rpc(fn,args));return error?{error}:{data}}
+    catch(e){return {error:e&&e.code?e:{message:String(e&&e.message||e)}}}
+  }
+  const uid=()=>session&&session.user&&session.user.id;
+  const sentDays=()=>(store.get('sent',{})[uid()]||[]);
+  function markSent(day){const all=store.get('sent',{}),list=(all[uid()]||[]).filter(d=>d!==day);list.push(day);all[uid()]=list.slice(-10);store.set('sent',all)}
+
+  async function loadProfile(){
+    try{
+      const {data,error}=await withTimeout(client.from('profiles').select('nick,nick_confirmed').eq('id',uid()).maybeSingle());
+      if(error)throw error;
+      profile=data;
+    }catch(e){profile=null;emit('error',onlineError(e))}
+    emit('change');
+    if(profile&&!profile.nick_confirmed)emit('needNick',profile.nick);
+  }
+
+  // Po zalogowaniu (także po odświeżeniu strony): dzisiejszy wynik z localStorage, jeśli jeszcze nie poszedł.
+  async function afterSignIn(){
+    const saved=buildPayload(store.get('daily',null),'daily');
+    if(saved&&Math.abs(saved.p_day-dayNumber())<=1&&!sentDays().includes(saved.p_day))enqueue(saved);
+    await loadProfile();
+    await flush();
+  }
+
+  function enqueue(payload){
+    const pending=store.get('pending',[]).filter(p=>p.p_day!==payload.p_day);
+    pending.push(payload);store.set('pending',pending);
+  }
+
+  // Wysyła zaległe wyniki. Zostawia te, których nie udało się wysłać z powodu sieci;
+  // porzuca te spoza okna ±1 dzień i odrzucone przez walidację serwera.
+  async function flush(){
+    const out=[];
+    if(!client||!uid())return out;
+    const today=dayNumber(),keep=[];
+    for(const p of store.get('pending',[])){
+      if(Math.abs(p.p_day-today)>1)continue;
+      const {data,error}=await call('submit_result',p);
+      if(!error){markSent(p.p_day);out.push({ok:true,day:p.p_day,already:!!(data&&data.already_saved)})}
+      else if(error.code==='22023')out.push({ok:false,day:p.p_day,message:onlineError(error)});
+      else{keep.push(p);out.push({ok:false,day:p.p_day,message:onlineError(error),retry:true})}
+    }
+    store.set('pending',keep);
+    out.forEach(r=>emit('submitted',r));
+    return out;
+  }
+
+  async function signOut(){if(client)await client.auth.signOut().catch(()=>{});session=null;profile=null;emit('change')}
+
+  return {
+    onChange(f){listeners.push(f)},
+    get ready(){return !!client},
+    get user(){return session&&session.user},
+    get profile(){return profile},
+    async init(){
+      try{client=await loadClient()}catch(e){client=null;return false}
+      client.auth.onAuthStateChange((event,s)=>{
+        const was=uid();session=s;
+        if(!s){profile=null;emit('change');return}
+        if(was!==uid())setTimeout(afterSignIn,0); // poza wywołaniem zwrotnym auth
+        else emit('change');
+      });
+      return true;
+    },
+    async signIn(redirectTo){
+      if(!client)return {error:'Logowanie jest chwilowo niedostępne'};
+      const {error}=await client.auth.signInWithOAuth({provider:'discord',options:{redirectTo}});
+      return error?{error:onlineError(error)}:{};
+    },
+    signOut,
+    async submitGame(game,mode){
+      const p=buildPayload(game,mode);if(!p)return [];
+      enqueue(p);return flush();
+    },
+    flush,
+    async setNick(nick){
+      const {data,error}=await call('set_nick',{p_nick:nick});
+      if(error)return {error:onlineError(error)};
+      profile={nick:data,nick_confirmed:true};emit('change');return {nick:data};
+    },
+    async deleteAccount(){
+      const {error}=await call('delete_my_account',{});
+      if(error)return {error:onlineError(error)};
+      const all=store.get('sent',{});delete all[uid()];store.set('sent',all);store.set('pending',[]);
+      await signOut();return {};
+    },
+    async rankingDay(day){const r=await call('ranking_day',{p_day:day});return r.error?{error:onlineError(r.error)}:{rows:r.data||[]}},
+    async rankingOverall(){const r=await call('ranking_overall',{p_limit:100});return r.error?{error:onlineError(r.error)}:{rows:r.data||[]}},
+  };
+}
+// online:end
 
 let settings=store.get('settings2',{strict:true,hard:false,cb:false});
 let stats=store.get('stats',{played:0,won:0,streak:0,best:0,dist:[0,0,0,0,0,0],lastDay:0});
@@ -287,6 +479,7 @@ function submit(){
   if(settings.strict&&!known){shake();toast('Nie ma tego słowa w słowniku');return}
   if(settings.hard){const err=hardModeError(word);if(err){shake();toast(err);return}}
   const rowIdx=game.guesses.length,res=score(word,game.answer),row=board.children[rowIdx];
+  if(!rowIdx)game.hard=settings.hard; // tryb trudny ustala się przed pierwszą próbą
   game.guesses.push(word);cur=[];busy=true;
   [...row.children].forEach((t,i)=>setTimeout(()=>{t.classList.add('flip');setTimeout(()=>t.classList.add(res[i]),250)},i*260));
   setTimeout(()=>{
@@ -306,6 +499,7 @@ function finish(){
     stats.lastDay=game.day;store.set('stats',stats);
   }
   save();setTimeout(openStats,1600);
+  if(mode==='daily'&&online.user)online.submitGame(game,mode);
 }
 
 /* modals */
@@ -343,6 +537,7 @@ function openStats(){
     };
     const a=$('#again');if(a)a.onclick=()=>{closeAll();newGame('free')};
   }
+  showTab('mine');
   open('#dStats');
 }
 function tick(){const el=$('#cd');if(!el)return;const n=new Date(),m=new Date(n);m.setHours(24,0,0,0);
@@ -357,7 +552,122 @@ function applySettings(){document.body.classList.toggle('cb',settings.cb);$('#sS
   settings[key]=e.target.checked;store.set('settings2',settings);applySettings();
 }));
 
+/* konto i ranking: UI */
+const SB_SRC='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js';
+const SB_SRI='sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK';
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const redirectTo=()=>location.origin+location.pathname.replace(/index\.html$/,'');
+
+function loadSupabase(){
+  return new Promise((resolve,reject)=>{
+    const s=document.createElement('script');
+    s.src=SB_SRC;s.integrity=SB_SRI;s.crossOrigin='anonymous';s.onerror=reject;
+    s.onload=async()=>{
+      try{
+        const c=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{flowType:'pkce',storageKey:'slowik.auth',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+        await c.auth.getSession(); // czeka na wymianę kodu po powrocie z Discorda
+        resolve(c);
+      }catch(e){reject(e)}
+    };
+    document.head.appendChild(s);
+  });
+}
+
+const online=createOnline({store,dayNumber,loadClient:loadSupabase});
+let onlineReady=null;
+
+function renderAccount(){
+  const b=$('#bAcct'),u=online.user,p=online.profile;
+  const label=u?(p?p.nick:'Konto'):'Zaloguj przez Discord';
+  b.querySelector('span').textContent=label;
+  b.setAttribute('aria-label',u?`Konto: ${label}`:label);
+  const dot=b.querySelector('.dot');
+  if(u&&p&&!p.nick_confirmed){if(!dot)b.insertAdjacentHTML('beforeend','<i class="dot" aria-hidden="true"></i>')}else if(dot)dot.remove();
+  if(u&&p){$('#acctNick').textContent=p.nick;$('#acctNote').textContent=p.nick_confirmed?'Twój nick jest widoczny w rankingu.':'Nick nie jest zatwierdzony, więc nie występujesz w rankingu. Twoje wyniki i tak się zapisują.'}
+}
+function openNick(suggestion){
+  $('#nickIn').value=suggestion||'';$('#nickErr').textContent='';
+  open('#dNick');$('#nickIn').focus();$('#nickIn').select();
+}
+
+online.onChange((type,data)=>{
+  if(type==='change')renderAccount();
+  else if(type==='needNick'){
+    const asked=store.get('nickAsked',[]),id=online.user&&online.user.id;
+    if(id&&!asked.includes(id)){store.set('nickAsked',asked.concat(id).slice(-5));openNick(data)}
+  }
+  else if(type==='submitted'){
+    if(data.ok)toast(data.already?'Wynik na ten dzień był już w rankingu':'Wynik zapisany w rankingu');
+    else toast(data.message+(data.retry?' Spróbujemy ponownie później.':''),3500);
+  }
+  else if(type==='error')toast(data,3500);
+});
+
+$('#bAcct').onclick=async()=>{
+  if(online.user){renderAccount();open('#dAcct');return}
+  if(!online.ready&&onlineReady)await onlineReady;
+  if(!online.ready){toast('Logowanie jest chwilowo niedostępne. Gra działa dalej.',3000);return}
+  const r=await online.signIn(redirectTo());
+  if(r.error)toast(r.error,3500);
+};
+$('#acctNickBtn').onclick=()=>openNick(online.profile&&online.profile.nick);
+$('#acctOut').onclick=async()=>{closeAll();await online.signOut();toast('Wylogowano')};
+$('#acctDel').onclick=()=>{$('#delIn').value='';$('#delErr').textContent='';$('#delGo').disabled=true;open('#dDel');$('#delIn').focus()};
+$('#delIn').oninput=e=>{$('#delGo').disabled=e.target.value.trim().toLowerCase()!=='usuń'};
+$('#delForm').onsubmit=async e=>{
+  e.preventDefault();if($('#delGo').disabled)return;
+  $('#delGo').disabled=true;
+  const r=await online.deleteAccount();
+  if(r.error){$('#delErr').textContent=r.error;$('#delGo').disabled=false;return}
+  closeAll();toast('Konto i wszystkie dane zostały usunięte',3000);
+};
+$('#nickForm').onsubmit=async e=>{
+  e.preventDefault();
+  const r=await online.setNick($('#nickIn').value);
+  if(r.error){$('#nickErr').textContent=r.error;return}
+  closeAll();toast(`Nick „${r.nick}” zatwierdzony`);
+};
+
+function showTab(t){
+  [['mine','#tMine','#pMine'],['day','#tDay','#pDay'],['all','#tAll','#pAll']].forEach(([k,tab,panel])=>{
+    $(tab).setAttribute('aria-selected',k===t);$(panel).hidden=k!==t;
+  });
+  if(t!=='mine')loadRanking(t);
+}
+document.querySelector('.tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)showTab(b.dataset.tab)});
+
+async function loadRanking(kind){
+  const el=$(kind==='day'?'#pDay':'#pAll'),n=dayNumber();
+  const title=kind==='day'?`<h2>Ranking dnia #${n}</h2>`:'<h2>Ranking ogólny</h2>';
+  el.innerHTML=title+'<p class="muted">Ładowanie…</p>';
+  if(!online.ready&&onlineReady)await onlineReady;
+  if(!online.ready){el.innerHTML=title+'<p class="muted">Ranking jest chwilowo niedostępny. Gra działa dalej.</p>';return}
+  const r=kind==='day'?await online.rankingDay(n):await online.rankingOverall();
+  if(r.error){el.innerHTML=title+`<p class="muted">${esc(r.error)}</p>`;return}
+  let hint='';
+  if(!online.user)hint='<p class="muted">Zaloguj się przez Discorda, żeby trafić do rankingu.</p>';
+  else if(online.profile&&!online.profile.nick_confirmed)hint='<p class="muted">Zatwierdź nick w menu konta, żeby trafić do rankingu.</p>';
+  if(!r.rows.length){el.innerHTML=title+`<p class="muted">${kind==='day'?'Nikt jeszcze dziś nie zgadł słowa.':'Ranking jest jeszcze pusty.'}</p>`+hint;return}
+  const rows=r.rows.map(x=>kind==='day'
+    ?`<tr${x.is_me?' class="me"':''}><td class="n">${x.place}</td><td class="nick">${esc(x.nick)}</td><td class="n">${x.attempts}${x.hard_mode?'*':''}</td></tr>`
+    :`<tr${x.is_me?' class="me"':''}><td class="n">${x.place}</td><td class="nick">${esc(x.nick)}</td><td class="n">${x.wins}</td><td class="n">${x.win_pct}%</td><td class="n">${x.best_streak}</td><td class="n">${x.games}</td></tr>`).join('');
+  const head=kind==='day'
+    ?'<tr><th class="n">#</th><th>Nick</th><th class="n">Próby</th></tr>'
+    :'<tr><th class="n">#</th><th>Nick</th><th class="n">Wygr.</th><th class="n">%</th><th class="n">Seria</th><th class="n">Gry</th></tr>';
+  const foot=kind==='day'?'<p class="muted">* tryb trudny (deklaracja gracza)</p>':'';
+  el.innerHTML=title+`<table class="rank"><thead>${head}</thead><tbody>${rows}</tbody></table>`+foot+hint;
+}
+
 applySettings();newGame('daily');
+onlineReady=online.init().then(ok=>{
+  const q=new URLSearchParams(location.search);
+  if(q.has('code')||q.has('error')){
+    if(q.has('error'))toast('Logowanie przez Discorda nie powiodło się albo zostało anulowane',3500);
+    history.replaceState(null,'',redirectTo());
+  }
+  renderAccount();
+  return ok;
+});
 if(!store.get('seenHelp',false)){store.set('seenHelp',true);open('#dHelp')}
 </script>
 

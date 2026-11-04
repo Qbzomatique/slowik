@@ -20,9 +20,17 @@ function loadScore() {
   return vm.runInNewContext(`${chars[0]}\n${score[0]}\nscore`);
 }
 
+// Moduł konta i rankingu (blok między // online:start a // online:end w index.html).
+function loadOnline() {
+  const code = inlineScripts().join('\n');
+  const block = code.match(/\/\/ online:start\r?\n([\s\S]*?)\/\/ online:end/);
+  if (!block) fail('Nie znalazłem w index.html bloku „// online:start … // online:end”.');
+  return vm.runInNewContext(`${block[1]}\n({ buildPayload, onlineError, createOnline })`, { setTimeout, clearTimeout, console });
+}
+
 function fail(msg) {
   console.log(`BŁĄD: ${msg}`);
   process.exit(1);
 }
 
-module.exports = { read, inlineScripts, loadScore, fail };
+module.exports = { read, inlineScripts, loadScore, loadOnline, fail };
