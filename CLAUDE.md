@@ -18,7 +18,7 @@ Strona: https://qbzomatique.github.io/slowik/ (GitHub Pages z gałęzi `main`, f
 
 ## Zasady, których pilnować
 
-- **`data/answers.txt` jest tylko do dopisywania na końcu.** Słowo dnia nr N to `ANSWERS[(N-1) % len]`, gdzie #1 = 4 listopada 2026 (czas lokalny gracza). Zmiana kolejności lub usunięcie hasła zmienia słowa minionych i przyszłych dni.
+- **`data/answers.txt`: nie wolno zmieniać haseł dni, które już minęły (pozycje 1..dzisiejszy numer dnia), ani ich kolejności. Przyszłe hasła można usuwać i przestawiać. Nowe najlepiej dopisywać na końcu.** Słowo dnia nr N to `ANSWERS[(N-1) % len]`, gdzie #1 = 4 listopada 2026 (czas lokalny gracza).
 - Hasła dnia: zwykłe, znane słowa, głównie rzeczowniki w mianowniku l. poj.; bez nazw własnych, wulgaryzmów i rzadkich form. Każde hasło musi być w słowniku SJP (skrypt to sprawdza).
 - Polskie litery (ą ć ę ł ń ó ś ź ż) to osobne litery; słowa są normalizowane do NFC i małych liter.
 - Kolorowanie prób obsługuje powtórzone litery dwuprzebiegowo (najpierw trafienia, potem litery na złym miejscu z limitem wystąpień). Po każdej zmianie funkcji `score` sprawdzić przypadki z powtórzeniami, np. `lalka`/`balon` → szare, zielone, zielone, szare, szare.
