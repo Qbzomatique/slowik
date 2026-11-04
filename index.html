@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Słowik</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=Rubik:wght@400;500;700&display=swap">
+<style>
+/* Layout: one-screen app — header, board centred, keyboard pinned to the bottom; modals over it */
+:root{
+  --bg:#F3F5F9; --surface:#FFFFFF; --fg:#17202D; --muted:#5E6878;
+  --line:#CBD2DD; --line-strong:#8C96A6;
+  --hit:#2B8A66; --near:#D19A16; --miss:#6E7787; --on-tile:#FFFFFF;
+  --key:#D3D9E3; --key-miss:#7B8494; --key-miss-fg:#FFFFFF; --accent:#2B5BD7;
+  --display:"Unbounded","Rubik",system-ui,sans-serif;
+  --body:"Rubik",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E131B; --surface:#171E29; --fg:#E7EBF1; --muted:#97A1B2;
+  --line:#2E3847; --line-strong:#5A6576;
+  --hit:#2F9E74; --near:#C8961E; --miss:#3B4555; --on-tile:#FFFFFF;
+  --key:#5A6577; --key-miss:#1C222B; --key-miss-fg:#6C7686; --accent:#7EA2FF; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0E131B; --surface:#171E29; --fg:#E7EBF1; --muted:#97A1B2;
+  --line:#2E3847; --line-strong:#5A6576;
+  --hit:#2F9E74; --near:#C8961E; --miss:#3B4555; --on-tile:#FFFFFF;
+  --key:#5A6577; --key-miss:#1C222B; --key-miss-fg:#6C7686; --accent:#7EA2FF; color-scheme:dark }
+body.cb{ --hit:#E0742B; --near:#3E8FE0; }
+
+*,*::before,*::after{box-sizing:border-box}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;
+  display:flex;flex-direction:column;overflow:hidden;
+  padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+header{display:flex;align-items:center;gap:8px;padding-block:10px;border-bottom:1px solid var(--line);max-width:520px;width:100%;margin:0 auto}
+.brand{font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:.01em;flex:1;display:flex;align-items:baseline;gap:8px}
+.brand small{font-family:var(--body);font-weight:500;font-size:12px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+.icon{width:36px;height:36px;border:0;background:transparent;border-radius:8px;display:grid;place-items:center}
+.icon:hover{background:var(--key)}
+.icon svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+.modes{display:flex;gap:4px;justify-content:center;padding-block:10px 0}
+.modes button{border:1px solid var(--line);background:transparent;border-radius:999px;padding:5px 14px;font-size:13px;font-weight:500;color:var(--muted)}
+.modes button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+
+main{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;padding-block:8px}
+#board{display:grid;grid-template-rows:repeat(6,1fr);gap:6px;height:min(100%,400px);aspect-ratio:5/6;max-width:100%}
+.row{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.tile{border:2px solid var(--line);display:grid;place-items:center;font-family:var(--body);font-weight:700;
+  font-size:clamp(20px,5.5vh,32px);text-transform:uppercase;user-select:none;border-radius:4px;background:var(--surface);aspect-ratio:1}
+.tile.filled{border-color:var(--line-strong);animation:pop .1s ease-out}
+.tile.hit,.tile.near,.tile.miss{color:var(--on-tile);border-color:transparent}
+.tile.hit{background:var(--hit)} .tile.near{background:var(--near)} .tile.miss{background:var(--miss)}
+.tile.flip{animation:flip .5s ease-in-out both}
+.row.shake{animation:shake .4s}
+.row.win .tile{animation:hop .4s ease both}
+@keyframes pop{50%{transform:scale(1.08)}}
+@keyframes flip{0%{transform:rotateX(0)}50%{transform:rotateX(90deg)}100%{transform:rotateX(0)}}
+@keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+@keyframes hop{40%{transform:translateY(-14px)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+
+#kbd{max-width:520px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:6px;padding-block:6px 12px}
+.krow{display:flex;gap:5px;justify-content:center}
+.key{flex:1;min-width:0;height:52px;border:0;border-radius:6px;background:var(--key);font-weight:600;font-size:15px;text-transform:uppercase;display:grid;place-items:center;padding:0;touch-action:manipulation}
+.krow.pl .key{background:color-mix(in srgb,var(--key) 70%,var(--accent) 12%)}
+.key.wide{flex:1.6;font-size:12px}
+.key.hit{background:var(--hit);color:var(--on-tile)}
+.key.near{background:var(--near);color:var(--on-tile)}
+.key.miss{background:var(--key-miss);color:var(--key-miss-fg)}
+.key svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8}
+.spacer{flex:.5}
+
+#toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 120px);transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;z-index:30;pointer-events:none;align-items:center}
+.t{background:var(--fg);color:var(--bg);padding:9px 14px;border-radius:6px;font-weight:500;font-size:14px;animation:fade 2s forwards}
+@keyframes fade{0%,80%{opacity:1}100%{opacity:0}}
+
+.scrim{position:fixed;inset:0;background:color-mix(in srgb,var(--bg) 70%,transparent);backdrop-filter:blur(3px);display:grid;place-items:center;z-index:20;padding:16px}
+.modal{background:var(--surface);border:1px solid var(--line);border-radius:12px;max-width:420px;width:100%;max-height:calc(100% - 32px);overflow:auto;padding:22px;position:relative;box-shadow:0 20px 50px -20px rgba(0,0,0,.35)}
+.modal h2{font-family:var(--display);font-weight:600;font-size:16px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 14px}
+.modal h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px;font-weight:500}
+.modal p{margin:0 0 10px;line-height:1.5}
+.close{position:absolute;top:12px;right:12px}
+.ex{display:flex;gap:4px;margin:8px 0 4px}
+.ex .tile{width:36px;height:36px;font-size:18px;aspect-ratio:auto}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center}
+.stats b{display:block;font-family:var(--display);font-size:26px;font-weight:600;font-variant-numeric:tabular-nums}
+.stats span{font-size:11px;color:var(--muted);line-height:1.2;display:block}
+.dist{display:flex;flex-direction:column;gap:4px}
+.bar{display:flex;align-items:center;gap:8px;font-variant-numeric:tabular-nums;font-size:13px}
+.bar i{font-style:normal;background:var(--miss);color:var(--on-tile);padding:2px 7px;min-width:22px;text-align:right;border-radius:3px;font-weight:600}
+.bar i.now{background:var(--hit)}
+.end{display:flex;gap:12px;align-items:center;margin-top:18px;flex-wrap:wrap}
+.next{flex:1;min-width:130px}
+.next span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.next b{display:block;font-family:var(--display);font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.btn{border:0;background:var(--hit);color:var(--on-tile);font-weight:700;padding:12px 18px;border-radius:8px;display:inline-flex;gap:8px;align-items:center}
+.btn.ghost{background:var(--key);color:var(--fg)}
+.answer{font-family:var(--display);font-size:20px;letter-spacing:.12em;text-transform:uppercase;margin:4px 0 0}
+.setting{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-block:12px;border-bottom:1px solid var(--line)}
+.setting div{min-width:0}
+.setting small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px;line-height:1.4}
+.sw{appearance:none;width:42px;height:24px;border-radius:999px;background:var(--line-strong);position:relative;flex:none;cursor:pointer;margin:0}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .15s}
+.sw:checked{background:var(--hit)} .sw:checked::after{left:21px}
+.sw:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+textarea#sharebox{width:100%;margin-top:10px;font:13px/1.4 var(--body);background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:8px}
+@media (max-height:640px){.key{height:44px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Słowik <small id="sub">słowo dnia #1</small></div>
+  <button class="icon" id="bHelp" aria-label="Jak grać"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 0 1 4.9.7c0 1.7-2.4 2.1-2.4 3.8"/><path d="M12 17h.01"/></svg></button>
+  <button class="icon" id="bStats" aria-label="Statystyki"><svg viewBox="0 0 24 24"><path d="M5 20V11M12 20V5M19 20v-6"/></svg></button>
+  <button class="icon" id="bSet" aria-label="Ustawienia"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg></button>
+</header>
+<nav class="modes">
+  <button id="mDaily" aria-pressed="true">Słowo dnia</button>
+  <button id="mFree" aria-pressed="false">Trening</button>
+</nav>
+<main><div id="board" aria-label="Plansza" role="grid"></div></main>
+<div id="kbd" aria-label="Klawiatura"></div>
+<div id="toast" aria-live="polite"></div>
+
+<div class="scrim" id="dHelp" hidden><div class="modal" role="dialog" aria-labelledby="hHelp">
+  <button class="icon close" data-close aria-label="Zamknij"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <h2 id="hHelp">Jak grać</h2>
+  <p>Zgadnij pięcioliterowe słowo w sześciu próbach. Po każdej próbie płytki zmieniają kolor.</p>
+  <p>Polskie znaki to osobne litery: <b>Ą</b> to nie <b>A</b>, a <b>Ł</b> to nie <b>L</b>.</p>
+  <div class="ex"><div class="tile hit">k</div><div class="tile">o</div><div class="tile">t</div><div class="tile">e</div><div class="tile">k</div></div>
+  <p><b>K</b> jest w słowie i stoi na właściwym miejscu.</p>
+  <div class="ex"><div class="tile">ł</div><div class="tile near">ą</div><div class="tile">k</div><div class="tile">a</div><div class="tile">m</div></div>
+  <p><b>Ą</b> jest w słowie, ale na innym miejscu.</p>
+  <div class="ex"><div class="tile">s</div><div class="tile">ł</div><div class="tile">o</div><div class="tile miss">w</div><div class="tile">o</div></div>
+  <p><b>W</b> nie występuje w słowie.</p>
+  <h3>Tryby</h3>
+  <p>Próba musi być prawdziwym słowem, w dowolnej formie: <b>kotki</b> albo <b>pisze</b> też przejdą.</p>
+  <p><b>Słowo dnia</b> jest jedno dla wszystkich i zmienia się o północy. <b>Trening</b> losuje nowe słowo bez limitu i nie liczy się do statystyk.</p>
+  <h3>Słownik</h3>
+  <p style="font-size:13px;color:var(--muted)">Słownik do gier <a href="https://sjp.pl" style="color:var(--accent)">SJP.PL</a>, licencja CC BY 4.0.</p>
+</div></div>
+
+<div class="scrim" id="dStats" hidden><div class="modal" role="dialog" aria-labelledby="hStats">
+  <button class="icon close" data-close aria-label="Zamknij"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <div id="result"></div>
+  <h2 id="hStats">Statystyki</h2>
+  <div class="stats" id="statNums"></div>
+  <h3>Rozkład prób</h3>
+  <div class="dist" id="dist"></div>
+  <div class="end" id="endRow"></div>
+</div></div>
+
+<div class="scrim" id="dSet" hidden><div class="modal" role="dialog" aria-labelledby="hSet">
+  <button class="icon close" data-close aria-label="Zamknij"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <h2 id="hSet">Ustawienia</h2>
+  <label class="setting" for="sStrict"><div>Tylko słowa ze słownika<small>Odrzuca słowa, których nie ma w słowniku SJP.PL. Po wyłączeniu gra przyjmie dowolne 5 liter.</small></div><input type="checkbox" class="sw" id="sStrict"></label>
+  <label class="setting" for="sHard"><div>Tryb trudny<small>Odkryte podpowiedzi trzeba wykorzystać w kolejnych próbach.</small></div><input type="checkbox" class="sw" id="sHard"></label>
+  <label class="setting" for="sCb"><div>Kolory dla daltonistów<small>Pomarańczowy i niebieski zamiast zielonego i żółtego.</small></div><input type="checkbox" class="sw" id="sCb"></label>
+</div></div>
+
+<script src="words.js"></script>
+<script>
+
+const START=Date.UTC(2026,10,4); // #1 = 4 listopada 2026
+const store={get(k,d){try{const v=localStorage.getItem('slowik.'+k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem('slowik.'+k,JSON.stringify(v))}catch(e){}}};
+const $=s=>document.querySelector(s);
+const chars=w=>Array.from(w);
+const LETTERS=/^[a-ząćęłńóśźż]$/;
+
+function dayNumber(){const n=new Date();return Math.floor((Date.UTC(n.getFullYear(),n.getMonth(),n.getDate())-START)/864e5)+1}
+function dailyWord(n){return ANSWERS[((n-1)%ANSWERS.length+ANSWERS.length)%ANSWERS.length]}
+
+function score(guess,answer){
+  const g=chars(guess),a=chars(answer),res=Array(5).fill('miss'),left={};
+  for(let i=0;i<5;i++){if(g[i]===a[i])res[i]='hit';else left[a[i]]=(left[a[i]]||0)+1}
+  for(let i=0;i<5;i++){if(res[i]!=='hit'&&left[g[i]]){res[i]='near';left[g[i]]--}}
+  return res;
+}
+
+let settings=store.get('settings2',{strict:true,hard:false,cb:false});
+let stats=store.get('stats',{played:0,won:0,streak:0,best:0,dist:[0,0,0,0,0,0],lastDay:0});
+let mode='daily',game,cur=[],busy=false;
+
+function newGame(m){
+  mode=m;cur=[];
+  if(m==='daily'){
+    const n=dayNumber(),saved=store.get('daily',null);
+    game=(saved&&saved.day===n)?saved:{day:n,answer:dailyWord(n),guesses:[],status:'playing'};
+    $('#sub').textContent='słowo dnia #'+n;
+  }else{
+    game={day:0,answer:ANSWERS[Math.floor(Math.random()*ANSWERS.length)],guesses:[],status:'playing'};
+    $('#sub').textContent='trening';
+  }
+  $('#mDaily').setAttribute('aria-pressed',m==='daily');$('#mFree').setAttribute('aria-pressed',m==='free');
+  renderBoard();renderKeys();
+  if(m==='daily'&&game.status!=='playing')setTimeout(()=>openStats(),300);
+}
+function save(){if(mode==='daily')store.set('daily',game)}
+
+/* board */
+const board=$('#board');
+function renderBoard(){
+  board.innerHTML='';
+  for(let r=0;r<6;r++){
+    const row=document.createElement('div');row.className='row';row.setAttribute('role','row');
+    const g=game.guesses[r],res=g?score(g,game.answer):null,letters=g?chars(g):(r===game.guesses.length?cur:[]);
+    for(let c=0;c<5;c++){
+      const t=document.createElement('div');t.className='tile';t.setAttribute('role','gridcell');
+      if(letters[c]){t.textContent=letters[c];t.classList.add('filled')}
+      if(res)t.classList.add(res[c]);
+      row.appendChild(t);
+    }
+    board.appendChild(row);
+  }
+}
+function paintCurrent(){
+  const row=board.children[game.guesses.length];if(!row)return;
+  [...row.children].forEach((t,i)=>{const l=cur[i]||'';if(t.textContent!==l){t.textContent=l;t.classList.toggle('filled',!!l)}});
+}
+
+/* keyboard */
+const LAYOUT=[['q','w','e','r','t','y','u','i','o','p'],['a','s','d','f','g','h','j','k','l'],['enter','z','x','c','v','b','n','m','back'],['ą','ć','ę','ł','ń','ó','ś','ź','ż']];
+function keyState(){
+  const st={},rank={miss:1,near:2,hit:3};
+  for(const g of game.guesses){const r=score(g,game.answer);chars(g).forEach((l,i)=>{if(!st[l]||rank[r[i]]>rank[st[l]])st[l]=r[i]})}
+  return st;
+}
+function renderKeys(){
+  const st=keyState(),k=$('#kbd');k.innerHTML='';
+  LAYOUT.forEach((row,ri)=>{
+    const d=document.createElement('div');d.className='krow'+(ri===3?' pl':'');
+    if(ri===1){const s=document.createElement('div');s.className='spacer';d.appendChild(s)}
+    row.forEach(key=>{
+      const b=document.createElement('button');b.className='key';b.dataset.k=key;
+      if(key==='enter'){b.textContent='Enter';b.classList.add('wide');b.setAttribute('aria-label','Zatwierdź')}
+      else if(key==='back'){b.innerHTML='<svg viewBox="0 0 24 24"><path d="M21 5H9l-6 7 6 7h12zM17 9l-6 6M11 9l6 6"/></svg>';b.classList.add('wide');b.setAttribute('aria-label','Usuń')}
+      else{b.textContent=key;if(st[key])b.classList.add(st[key])}
+      d.appendChild(b);
+    });
+    if(ri===1){const s=document.createElement('div');s.className='spacer';d.appendChild(s)}
+    k.appendChild(d);
+  });
+}
+$('#kbd').addEventListener('click',e=>{const b=e.target.closest('.key');if(b){press(b.dataset.k);b.blur()}});
+document.addEventListener('keydown',e=>{
+  if(e.ctrlKey||e.metaKey)return;
+  if(!document.querySelector('.scrim:not([hidden])')){
+    if(e.key==='Enter'){e.preventDefault();press('enter')}
+    else if(e.key==='Backspace')press('back');
+    else{const l=e.key.toLowerCase();if(LETTERS.test(l))press(l)}
+  }else if(e.key==='Escape')closeAll();
+});
+
+function press(k){
+  if(busy||game.status!=='playing')return;
+  if(k==='back'){cur.pop();paintCurrent();return}
+  if(k==='enter'){submit();return}
+  if(cur.length<5){cur.push(k);paintCurrent()}
+}
+function toast(msg,ms){const t=document.createElement('div');t.className='t';t.textContent=msg;if(ms)t.style.animationDuration=ms+'ms';$('#toast').appendChild(t);setTimeout(()=>t.remove(),ms||2000)}
+function shake(){const row=board.children[game.guesses.length];row.classList.remove('shake');void row.offsetWidth;row.classList.add('shake')}
+
+function hardModeError(word){
+  const w=chars(word);
+  for(const g of game.guesses){
+    const r=score(g,game.answer),gl=chars(g);
+    for(let i=0;i<5;i++)if(r[i]==='hit'&&w[i]!==gl[i])return `Litera ${gl[i].toUpperCase()} musi być na pozycji ${i+1}`;
+    const need={};gl.forEach((l,i)=>{if(r[i]!=='miss')need[l]=(need[l]||0)+1});
+    for(const l in need){if(w.filter(x=>x===l).length<need[l])return `Próba musi zawierać ${l.toUpperCase()}`}
+  }
+  return null;
+}
+
+function submit(){
+  if(cur.length<5){shake();toast('Za mało liter');return}
+  const word=cur.join('');
+  const known=VALID.has(word)||ANSWERS.includes(word);
+  if(settings.strict&&!known){shake();toast('Nie ma tego słowa w słowniku');return}
+  if(settings.hard){const err=hardModeError(word);if(err){shake();toast(err);return}}
+  const rowIdx=game.guesses.length,res=score(word,game.answer),row=board.children[rowIdx];
+  game.guesses.push(word);cur=[];busy=true;
+  [...row.children].forEach((t,i)=>setTimeout(()=>{t.classList.add('flip');setTimeout(()=>t.classList.add(res[i]),250)},i*260));
+  setTimeout(()=>{
+    busy=false;renderKeys();
+    if(word===game.answer){game.status='won';row.classList.add('win');[...row.children].forEach((t,i)=>t.style.animationDelay=i*80+'ms');
+      toast(['Genialnie!','Wspaniale!','Świetnie!','Bardzo dobrze!','Dobrze!','Uff, w ostatniej chwili!'][rowIdx]);finish()}
+    else if(game.guesses.length===6){game.status='lost';toast(game.answer.toUpperCase(),3500);finish()}
+    else if(!known&&!settings.strict&&!store.get('hintedUnknown',false)){store.set('hintedUnknown',true);toast('Tego słowa nie ma jeszcze w słowniku — próba przyjęta',3000)}
+    save();
+  },5*260+300);
+}
+function finish(){
+  if(mode==='daily'&&stats.lastDay!==game.day){
+    stats.played++;
+    if(game.status==='won'){stats.won++;stats.dist[game.guesses.length-1]++;stats.streak=(stats.lastWinDay===game.day-1?stats.streak:0)+1;stats.lastWinDay=game.day;stats.best=Math.max(stats.best,stats.streak)}
+    else stats.streak=0;
+    stats.lastDay=game.day;store.set('stats',stats);
+  }
+  save();setTimeout(openStats,1600);
+}
+
+/* modals */
+function open(id){closeAll();$(id).hidden=false;const c=$(id).querySelector('[data-close]');c&&c.focus()}
+function closeAll(){document.querySelectorAll('.scrim').forEach(s=>s.hidden=true)}
+document.querySelectorAll('.scrim').forEach(s=>s.addEventListener('click',e=>{if(e.target===s||e.target.closest('[data-close]'))closeAll()}));
+$('#bHelp').onclick=()=>open('#dHelp');$('#bStats').onclick=openStats;$('#bSet').onclick=()=>open('#dSet');
+$('#mDaily').onclick=()=>newGame('daily');$('#mFree').onclick=()=>newGame('free');
+
+function shareText(){
+  const em={hit:settings.cb?'🟧':'🟩',near:settings.cb?'🟦':'🟨',miss:'⬛'};
+  const head=mode==='daily'?`Słowik #${game.day}`:'Słowik (trening)';
+  const n=game.status==='won'?game.guesses.length:'X';
+  return `${head} ${n}/6${settings.hard?'*':''}\n`+game.guesses.map(g=>score(g,game.answer).map(r=>em[r]).join('')).join('\n');
+}
+function openStats(){
+  const res=$('#result');res.innerHTML='';
+  if(game.status!=='playing'){
+    res.innerHTML=`<h2>${game.status==='won'?'Wygrana':'Tym razem nie'}</h2><p style="margin:0;color:var(--muted)">Szukane słowo:</p><p class="answer">${game.answer}</p>`;
+  }
+  const pct=stats.played?Math.round(stats.won/stats.played*100):0;
+  $('#statNums').innerHTML=[[stats.played,'Gier'],[pct,'% wygranych'],[stats.streak,'Seria'],[stats.best,'Najdłuższa seria']].map(([v,l])=>`<div><b>${v}</b><span>${l}</span></div>`).join('');
+  const max=Math.max(1,...stats.dist);
+  $('#dist').innerHTML=stats.dist.map((v,i)=>{const now=mode==='daily'&&game.status==='won'&&game.guesses.length===i+1;
+    return `<div class="bar">${i+1}<i class="${now?'now':''}" style="width:${Math.max(6,v/max*100)}%">${v}</i></div>`}).join('');
+  const end=$('#endRow');end.innerHTML='';
+  if(game.status!=='playing'){
+    if(mode==='daily'){end.insertAdjacentHTML('beforeend','<div class="next"><span>Następne słowo za</span><b id="cd">--:--:--</b></div>');tick()}
+    else end.insertAdjacentHTML('beforeend','<button class="btn ghost" id="again">Nowe słowo</button>');
+    end.insertAdjacentHTML('beforeend','<button class="btn" id="share">Udostępnij<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13"/></svg></button>');
+    $('#share').onclick=()=>{
+      const txt=shareText();
+      const fallback=()=>{let ta=$('#sharebox');if(!ta){ta=document.createElement('textarea');ta.id='sharebox';ta.rows=7;ta.readOnly=true;end.after(ta)}ta.value=txt;ta.focus();ta.select();toast('Zaznaczyłem wynik — skopiuj go ręcznie')};
+      try{navigator.clipboard.writeText(txt).then(()=>toast('Wynik skopiowany do schowka'),fallback)}catch(e){fallback()}
+    };
+    const a=$('#again');if(a)a.onclick=()=>{closeAll();newGame('free')};
+  }
+  open('#dStats');
+}
+function tick(){const el=$('#cd');if(!el)return;const n=new Date(),m=new Date(n);m.setHours(24,0,0,0);
+  const s=Math.max(0,Math.floor((m-n)/1000));el.textContent=[s/3600,s/60%60,s%60].map(x=>String(Math.floor(x)).padStart(2,'0')).join(':')}
+setInterval(()=>{tick();if(mode==='daily'&&game.day!==dayNumber()&&!busy)newGame('daily')},1000);
+
+/* settings */
+function applySettings(){document.body.classList.toggle('cb',settings.cb);$('#sStrict').checked=settings.strict;$('#sHard').checked=settings.hard;$('#sCb').checked=settings.cb}
+['Strict','Hard','Cb'].forEach(k=>$('#s'+k).addEventListener('change',e=>{
+  const key=k.toLowerCase();
+  if(key==='hard'&&e.target.checked&&game.guesses.length&&game.status==='playing'){e.target.checked=false;toast('Tryb trudny włączysz przed pierwszą próbą');return}
+  settings[key]=e.target.checked;store.set('settings2',settings);applySettings();
+}));
+
+applySettings();newGame('daily');
+if(!store.get('seenHelp',false)){store.set('seenHelp',true);open('#dHelp')}
+</script>
+
+</body>
+</html>
