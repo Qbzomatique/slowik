@@ -1,5 +1,7 @@
 # Słowik
 
+[![Testy](https://github.com/Qbzomatique/slowik/actions/workflows/testy.yml/badge.svg)](https://github.com/Qbzomatique/slowik/actions/workflows/testy.yml)
+
 Polska gra w zgadywanie pięcioliterowego słowa, w stylu Wordle.
 
 **Zagraj:** https://qbzomatique.github.io/slowik/
@@ -31,6 +33,7 @@ words.js                hasła i słownik, generowane skryptem
 data/answers.txt        lista haseł dnia w kolejności wypadania
 scripts/build_words.py  buduje words.js ze słownika SJP.PL
 scripts/candidates.py   wypisuje kandydatów na nowe hasła dnia
+tests/                  testy uruchamiane w GitHub Actions
 ```
 
 ## Słownik
@@ -52,6 +55,17 @@ python scripts/candidates.py slowa.txt pl_full.txt > kandydaci.txt
 ## Uruchomienie lokalnie
 
 Wystarczy otworzyć `index.html` w przeglądarce. Nie trzeba niczego instalować.
+
+## Testy
+
+Każdy push na `main` uruchamia testy w GitHub Actions (`.github/workflows/testy.yml`). Wystarczą Python 3.10+ i Node, bez instalowania pakietów. Lokalnie każdy test to jedno polecenie:
+
+```bash
+python tests/test_hasla.py         # words.js zgodny z answers.txt; hasła mają 5 polskich liter, są w słowniku, bez powtórek
+python tests/test_minione_dni.py   # hasła minionych dni bez zmian względem HEAD~1 (albo: ... <commit>)
+node tests/test_score.js           # kolorowanie prób, w tym powtórzone litery i polskie znaki
+node tests/test_skladnia.js        # skrypty z index.html i words.js parsują się bez błędów
+```
 
 ## Plany
 
