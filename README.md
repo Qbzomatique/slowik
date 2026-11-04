@@ -30,6 +30,7 @@ index.html              gra (HTML, CSS i JS w jednym pliku)
 words.js                hasła i słownik, generowane skryptem
 data/answers.txt        lista haseł dnia w kolejności wypadania
 scripts/build_words.py  buduje words.js ze słownika SJP.PL
+scripts/candidates.py   wypisuje kandydatów na nowe hasła dnia
 ```
 
 ## Słownik
@@ -42,13 +43,18 @@ python scripts/build_words.py ścieżka/do/slowa.txt
 
 Hasła dnia to osobna lista zwykłych słów w `data/answers.txt`. Kolejność w pliku wyznacza, które słowo wypada którego dnia, więc **nowe hasła dopisuj na końcu**. Zmiana kolejności zmieniłaby słowa minionych dni.
 
+Kandydatów na nowe hasła wybiera `scripts/candidates.py`: bierze pięcioliterowe słowa z [listy frekwencyjnej FrequencyWords](https://github.com/hermitdave/FrequencyWords) (polskie napisy filmowe), zostawia te ze słownika SJP.PL i spoza obecnej listy, a potem sortuje je od najczęstszych. Wynik trzeba przejrzeć ręcznie, bo słownik zawiera też formy odmienione.
+
+```bash
+python scripts/candidates.py slowa.txt pl_full.txt > kandydaci.txt
+```
+
 ## Uruchomienie lokalnie
 
 Wystarczy otworzyć `index.html` w przeglądarce. Nie trzeba niczego instalować.
 
 ## Plany
 
-- Pełniejsza lista haseł dnia
 - Konta i wspólne rankingi
 - Logowanie przez Discorda i bot z wynikami serwera
 - Kolejne gry (polski odpowiednik Krilliona, Connections)
@@ -57,3 +63,4 @@ Wystarczy otworzyć `index.html` w przeglądarce. Nie trzeba niczego instalować
 
 Kod: MIT (zob. `LICENSE`).
 Słownik: © SJP.PL, licencja [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) / GPL 2.
+Lista frekwencyjna (wybór haseł dnia): © Hermit Dave, [FrequencyWords](https://github.com/hermitdave/FrequencyWords), licencja [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
