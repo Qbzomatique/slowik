@@ -4,7 +4,8 @@ Porównuje pierwsze N haseł z data/answers.txt z wersją z commita bazowego, gd
 N = dzisiejszy numer dnia (#1 = 4 listopada 2026) + 1 dzień zapasu na strefy czasowe.
 
 Uruchomienie: python tests/test_minione_dni.py [commit]
-Commit bazowy: argument, zmienna BASE_SHA albo domyślnie HEAD~1.
+Commit bazowy: argument, zmienna BASE_SHA albo domyślnie HEAD~1. W GitHub Actions
+BASE_SHA to ostatni commit na main, dla którego testy przeszły.
 """
 import os
 import subprocess

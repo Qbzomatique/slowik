@@ -5,6 +5,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
   testy:
     runs-on: ubuntu-latest
@@ -13,16 +17,31 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Bazą dla testu minionych dni jest ostatni commit z zielonymi testami, a nie
+      # zwykły poprzedni commit: inaczej cofnięcie złej zmiany też byłoby czerwone.
+      - name: Wybierz commit bazowy
+        id: baza
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha=$(gh run list -R "$GITHUB_REPOSITORY" --workflow testy.yml --branch main \
+                --status success --limit 1 --json headSha --jq '.[0].headSha // ""')
+          echo "sha=${sha:-${{ github.event.before }}}" >> "$GITHUB_OUTPUT"
+
       - name: Hasła zgodne z words.js i poprawne
+        if: ${{ !cancelled() }}
         run: python3 tests/test_hasla.py
 
       - name: Minione dni nietknięte
+        if: ${{ !cancelled() }}
         run: python3 tests/test_minione_dni.py
         env:
-          BASE_SHA: ${{ github.event.before }}
+          BASE_SHA: ${{ steps.baza.outputs.sha }}
 
       - name: Kolorowanie prób
+        if: ${{ !cancelled() }}
         run: node tests/test_score.js
 
       - name: Składnia index.html i words.js
+        if: ${{ !cancelled() }}
         run: node tests/test_skladnia.js

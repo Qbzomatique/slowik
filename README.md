@@ -62,7 +62,7 @@ Każdy push na `main` uruchamia testy w GitHub Actions (`.github/workflows/testy
 
 ```bash
 python tests/test_hasla.py         # words.js zgodny z answers.txt; hasła mają 5 polskich liter, są w słowniku, bez powtórek
-python tests/test_minione_dni.py   # hasła minionych dni bez zmian względem HEAD~1 (albo: ... <commit>)
+python tests/test_minione_dni.py   # hasła minionych dni bez zmian względem HEAD~1 (albo: ... <commit>); w CI względem ostatniego zielonego commita
 node tests/test_score.js           # kolorowanie prób, w tym powtórzone litery i polskie znaki
 node tests/test_skladnia.js        # skrypty z index.html i words.js parsują się bez błędów
 ```
