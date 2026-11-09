@@ -252,8 +252,8 @@ Przebieg 9 listopada 2026, na produkcyjnym projekcie. R1–R4: zapytania do API 
 | R8 | A: `submit_result` na dzień dzisiejszy +2 i −2 | Błąd: dzień poza oknem | ✅ |
 | R9 | A: 7 prób, 0 prób, próba 4-literowa, próba z cyfrą, przegrana z 3 próbami | Błąd walidacji | ✅ |
 | R10 | A: `update` i `delete` na swoim wierszu `results` | Błąd uprawnień lub 0 zmienionych wierszy | ✅ |
-| R11 | A: `select` z `results` | Tylko własne wiersze | ⏳ OK przy jednym koncie, do powtórki z dwoma |
-| R12 | A: `select` z `profiles` | Tylko własny profil | ⏳ OK przy jednym koncie, do powtórki z dwoma |
+| R11 | A: `select` z `results` | Tylko własne wiersze | ✅ powtórzone na dwóch kontach |
+| R12 | A: `select` z `profiles` | Tylko własny profil | ✅ powtórzone na dwóch kontach |
 | R13 | A: bezpośredni `update` `profiles` (nick lub id) | Błąd uprawnień lub 0 wierszy | ✅ |
 | R14 | A: `set_nick` na nick zajęty przez B (inna wielkość liter) | Błąd: nick zajęty | ✅ |
 | R15 | A: `set_nick` z niedozwolonymi znakami lub złej długości | Błąd walidacji | ✅ |
