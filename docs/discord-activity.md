@@ -1,6 +1,6 @@
 # Słowik: gra w Discordzie (Activity) i ranking serwera
 
-Dokument analityczny. Wersja 1.0, 9 listopada 2026. Status: **do akceptacji**. Kontynuacja [backend.md](backend.md) i [ukrycie-hasel.md](ukrycie-hasel.md).
+Dokument analityczny. Wersja 1.1, 9 listopada 2026. Status: **zaakceptowany**. Kontynuacja [backend.md](backend.md) i [ukrycie-hasel.md](ukrycie-hasel.md).
 
 ## 1. Cel
 
@@ -114,7 +114,7 @@ RLS jak dotąd: `guild_players` bez zapisu z klienta, odczyt tylko własnych wie
 | L16 | Pamięć przeglądarki w ramce może być ulotna, szczególnie na telefonie | Stan gry bierzemy z serwera przez `get_game` |
 | L17 | Ranking serwera pokazuje tylko tych, którzy otworzyli Activity | Celowe: to świadomy udział |
 | L18 | Zmiany w Discordzie (SDK, proxy) mogą wymagać poprawek | Wersje przypięte w `vendor/`, testy ręczne po aktualizacji |
-| L19 | L10 i L11 nadal obowiązują | Bez zmian |
+| L19 | L10 i L11 nadal obowiązują. Ranking nie daje nagród, więc multikonta i celowe oszustwo mają niski priorytet i nie blokują dodania kolejnych metod logowania, np. Google. | Akceptujemy |
 
 ## 7. Lista testów ręcznych (D)
 
