@@ -18,6 +18,7 @@ function mockClient({ rpc = () => ({ data: null, error: null }), profile = { nic
       onAuthStateChange(cb) { auth.push(cb); },
       getSession: async () => ({ data: { session } }),
       signInWithOAuth: async () => ({ error: null }),
+      setSession: async tokens => { client.tokens = tokens; return { error: null }; },
       signOut: async () => ({ error: null }),
     },
     from: () => ({ select() { return this; }, eq() { return this; }, maybeSingle: async () => ({ data: profile, error: null }) }),
@@ -131,6 +132,11 @@ const tests = {
     const { events } = await setup({ client });
     client.login(); await tick(5);
     return events.some(([t, d]) => t === 'needNick' && d === 'Jan Kowalski') || 'brak zdarzenia needNick z podpowiedzią';
+  },
+  async 'sesja z Edge Function trafia do klienta Supabase'() {
+    const { online, client } = await setup();
+    const r = await online.setSession({ access_token: 'a', refresh_token: 'b' });
+    return (!r.error && same(client.tokens, { access_token: 'a', refresh_token: 'b' })) || `dostałem ${JSON.stringify(r)}`;
   },
   async 'usunięcie konta wylogowuje'() {
     const { online, client } = await setup();

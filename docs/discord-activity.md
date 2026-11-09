@@ -82,6 +82,7 @@ Przekierowanie OAuth z obecnej strony nie zadziała w ramce. Edge Function `acti
 
 Wymagania dla każdego sposobu:
 
+- Funkcja szuka konta po potwierdzonym e-mailu z Discorda i odrzuca sesję, gdy konto jest powiązane z innym identyfikatorem Discord.
 - Konto wskazuje **identyfikator Discord**, a nie sam e-mail, gdy gracz ma już konto. Gdy to nowy gracz, konto ma się później połączyć z logowaniem na stronie. Prototyp musi to potwierdzić.
 - Konto Discord bez potwierdzonego e-maila: gra działa bez rankingu lub logowanie jest odrzucane, zależnie od wyniku prototypu.
 - Sekret Discorda i token bota tylko w Supabase Secrets. Autor wpisuje je w panelu. Nigdy w repo ani w czacie.

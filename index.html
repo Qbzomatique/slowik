@@ -330,6 +330,12 @@ function createOnline({store,dayNumber,loadClient,timeoutMs=8000}){
       return error?{error:onlineError(error)}:{};
     },
     signOut,
+    // Sesja wydana przez Edge Function w Discord Activity; dalej działa jak po zwykłym logowaniu.
+    async setSession(tokens){
+      if(!client)return {error:'Logowanie jest chwilowo niedostępne'};
+      const {error}=await client.auth.setSession(tokens);
+      return error?{error:onlineError(error)}:{};
+    },
     // Jedna próba słowa dnia. Zalogowany gra na koncie, niezalogowany wysyła wszystkie próby i nie dostaje hasła.
     async guess(game,word){
       if(!client)return {error:'Słowo dnia jest chwilowo niedostępne. Zagraj w Trening.'};
@@ -594,6 +600,7 @@ let onlineReady=null,submitNote='';
 
 function renderAccount(){
   const b=$('#bAcct'),u=online.user,p=online.profile;
+  if(IN_DISCORD)b.hidden=!u; // w ramce konto daje Discord, nie ma przycisku logowania
   const label=u?(p?p.nick:'Konto'):'Zaloguj przez Discord';
   b.querySelector('span').textContent=label;
   b.setAttribute('aria-label',u?`Konto: ${label}`:label);
@@ -692,10 +699,24 @@ async function loadRanking(kind){
 async function startDiscord(){
   try{
     const {DiscordSDK}=await import('./vendor/discord-sdk-2.5.0.js');
-    await new DiscordSDK(DISCORD_CLIENT_ID).ready();
+    const sdk=new DiscordSDK(DISCORD_CLIENT_ID);
+    await sdk.ready();
+    await discordLogin(sdk);
   }catch(e){toast('Połączenie z Discordem nie powiodło się',3500)}
 }
-if(IN_DISCORD){$('#bAcct').hidden=true;startDiscord()} // logowanie w ramce dojdzie w kolejnym kroku
+// Sesja zapisana w ramce wystarcza; bez niej kod z SDK wymienia Edge Function.
+async function discordLogin(sdk){
+  await onlineReady;
+  if(!online.ready||online.user)return;
+  const {code}=await sdk.commands.authorize({client_id:DISCORD_CLIENT_ID,response_type:'code',state:'',prompt:'none',scope:['identify','email']});
+  const res=await fetch(API_URL+'/functions/v1/activity-auth',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY},body:JSON.stringify({code})});
+  const out=await res.json().catch(()=>({}));
+  if(!res.ok){toast(`Logowanie nie powiodło się (${out.step||res.status}): ${out.error||'błąd serwera'}`,6000);return}
+  await sdk.commands.authenticate({access_token:out.discord_token});
+  const r=await online.setSession(out.session);
+  if(r.error)toast(r.error,4000);
+}
+if(IN_DISCORD){$('#bAcct').hidden=true;$('#acctOut').hidden=true;startDiscord()}
 
 applySettings();newGame('daily');
 onlineReady=online.init().then(ok=>{
