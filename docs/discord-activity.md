@@ -1,6 +1,6 @@
 # Słowik: gra w Discordzie (Activity) i ranking serwera
 
-Dokument analityczny. Wersja 1.2, 9 listopada 2026. Status: **zaakceptowany**. Kontynuacja [backend.md](backend.md) i [ukrycie-hasel.md](ukrycie-hasel.md).
+Dokument analityczny. Wersja 1.3, 9 listopada 2026. Status: **zaakceptowany**. Kontynuacja [backend.md](backend.md) i [ukrycie-hasel.md](ukrycie-hasel.md).
 
 ## 1. Cel
 
@@ -121,15 +121,15 @@ RLS jak dotąd: `guild_players` bez zapisu z klienta, odczyt tylko własnych wie
 
 | # | Scenariusz | Wynik |
 |---|---|---|
-| D1 | Activity uruchamia się w kanale tekstowym, głosowym i w DM, na komputerze i telefonie | ⏳ kanał tekstowy: komputer i iPhone ✅; głosowy i DM do sprawdzenia |
+| D1 | Activity uruchamia się w kanale tekstowym, głosowym i w DM, na komputerze i telefonie | ✅ kanał tekstowy i głosowy, DM; komputer i iPhone |
 | D2 | Konto z Activity jest tym samym kontem co na stronie (ta sama gra i ranking) | ✅ |
-| D3 | Nowy gracz z Activity loguje się później na stronie i ma jedno konto | ⏳ konto z Activity działa; logowanie na stronie do sprawdzenia |
-| D4 | Niezatwierdzony nick nie występuje w rankingu serwera | ⏳ |
+| D3 | Nowy gracz z Activity loguje się później na stronie i ma jedno konto | ✅ |
+| D4 | Niezatwierdzony nick nie występuje w rankingu serwera | ✅ |
 | D5 | Podstawiony `guild_id` lub `instance_id` nie daje wpisu do `guild_players` | ⏳ w kodzie serwer pochodzi z API Discorda; bez testu z podstawionym klientem |
-| D6 | Gracz spoza serwera nie odczyta `ranking_guild` | ⏳ |
-| D7 | Ranking serwera nie ujawnia prób, identyfikatorów ani danych Discorda | ⏳ |
-| D8 | Usunięcie konta kasuje wpisy serwerów | ⏳ |
-| D9 | Brak sieci w Activity daje komunikat po polsku | ⏳ |
+| D6 | Gracz spoza serwera nie odczyta `ranking_guild` | ✅ |
+| D7 | Ranking serwera nie ujawnia prób, identyfikatorów ani danych Discorda | ✅ |
+| D8 | Usunięcie konta kasuje wpisy serwerów | ✅ |
+| D9 | Brak sieci w Activity daje komunikat po polsku | ⏳ Trening i komunikaty rankingów ✅; próba słowa dnia bez sieci niesprawdzona |
 
 D4 i D6–D8 sprawdza `supabase/tests/guild.sql`. Stan prototypu: gra, logowanie (działa przy wyłączonym dostawcy Email, L14 nieaktualne), ranking serwera i układ na telefonie są na produkcji.
 
