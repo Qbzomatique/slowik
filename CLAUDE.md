@@ -13,6 +13,9 @@ Strona: https://qbzomatique.github.io/slowik/ (GitHub Pages z gałęzi `main`, f
 
 - `index.html`: cała gra (HTML, CSS, JS w jednym pliku, bez frameworków i bez kroku budowania).
 - `words.js`: generowany. `ANSWERS` (hasła dnia) i `VALID` (dozwolone próby). Nie edytować ręcznie.
+- `docs/backend.md`: analiza backendu (wymagania, RODO, model danych, RLS, ograniczenia, wyniki testów RLS).
+- `supabase/migrations/`: schemat, RLS i funkcje RPC, numerowane datą.
+- `tests/`: testy CI (Python i Node, bez zależności); `tests/manual/rls_console.js` to ręczne testy RLS.
 - `data/answers.txt`: hasła dnia, jedno na linię, w kolejności wypadania.
 - `scripts/build_words.py`: buduje `words.js` z `slowa.txt` ze słownika do gier SJP.PL (https://sjp.pl/sl/growy/). `slowa.txt` (~45 MB) nie jest w repo (`.gitignore`); trzeba go pobrać i podać ścieżkę: `python scripts/build_words.py ścieżka/do/slowa.txt`.
 
@@ -26,14 +29,27 @@ Strona: https://qbzomatique.github.io/slowik/ (GitHub Pages z gałęzi `main`, f
 - Słownik SJP.PL jest na licencji CC BY 4.0 / GPL 2: zachować przypisanie w README i w oknie „Jak grać”.
 - Kolory przez zmienne CSS w `:root`, z wersją ciemną (`prefers-color-scheme` i `data-theme`). Strona musi działać na telefonie (~390 px szerokości).
 
+## Konta i ranking (Supabase)
+
+- Gra musi działać bez logowania i bez sieci. Każdy błąd Supabase kończy się komunikatem po polsku, a gra działa dalej na `localStorage`.
+- W repo tylko URL projektu i klucz publishable (`index.html`). Kluczy secret/`service_role`, sekretu Discorda ani hasła do bazy nigdy nie zapisywać w repo ani nie wklejać do czatu.
+- Logika konta jest w `index.html` między `// online:start` a `// online:end`: bez DOM, bo uruchamia ją `tests/test_online.js` z atrapą Supabase.
+- Zmiany w bazie tylko nowym plikiem migracji, bez edycji wdrożonych. Autor zatwierdza migrację i sam ją uruchamia w SQL Editor.
+- Każda tabela ma RLS. Klient zapisuje wyłącznie przez funkcje RPC. Funkcje `SECURITY DEFINER` mają `search_path = ''`, pełne nazwy obiektów i jawne `grant execute`.
+- Rankingi pokazują tylko nick i liczby, wyłącznie dla `nick_confirmed = true`. Nigdy `user_id` ani prób.
+- Trening nie trafia do rankingu. Nicki escapować przed wstawieniem do HTML.
+- Znane ograniczenia, m.in. publiczne hasła w `words.js` (L1–L3): `docs/backend.md`, rozdział 8.
+
 ## Plany (kolejność orientacyjna)
 
-1. Lepsza, dłuższa lista haseł dnia (np. z listy frekwencyjnej przefiltrowanej przez SJP, potem ręczny przegląd).
-2. Backend (np. Supabase): konta, wspólne rankingi, serie.
-3. Logowanie przez Discorda (OAuth), bot ze slash-komendami i dziennym postem, ranking serwera.
+1. Ukrycie haseł (L1–L3 w `docs/backend.md`) przed publicznym ogłoszeniem rankingów; pełna polityka prywatności (L9).
+2. Podtrzymanie darmowego projektu Supabase przed uśpieniem (L5) i kopie zapasowe (L6).
+3. Bot Discorda ze slash-komendami i dziennym postem, ranking serwera.
 4. Discord Activity (gra uruchamiana w Discordzie).
 5. Kolejne gry: polski odpowiednik Krilliona (rzadkie odpowiedzi, lematyzacja np. Morfeuszem), Connections.
 
 ## Commity
+
+Pracujemy bezpośrednio na `main`, bez gałęzi i PR-ów; testy CI mają zostać zielone.
 
 Krótkie opisy po polsku w trybie rozkazującym lub opisowym, np. „Dodaj tryb trudny”, „Popraw kontrast klawiatury”.

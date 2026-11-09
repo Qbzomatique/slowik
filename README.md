@@ -24,6 +24,19 @@ Polskie znaki to osobne litery: `ą` to nie `a`, a `ł` to nie `l`.
 - Udostępnianie wyniku jako siatki emoji.
 - Tryb trudny i kolory dla daltonistów.
 - Sprawdzanie prób w słowniku SJP.PL (28 702 formy pięcioliterowe).
+- Opcjonalne logowanie przez Discorda: ranking dnia i ranking ogólny. Bez logowania gra działa w pełni.
+
+## Architektura
+
+```mermaid
+flowchart LR
+  G[Przeglądarka<br/>index.html, words.js, localStorage] -->|pliki statyczne| P[GitHub Pages]
+  G -->|logowanie OAuth PKCE| D[Discord]
+  G -->|supabase-js: funkcje RPC| S[(Supabase<br/>Auth, Postgres, RLS)]
+  D -->|profil gracza| S
+```
+
+Frontend nie ma kroku budowania. W repo jest tylko publiczny klucz publishable, a dane chroni Row Level Security. Wyniki zapisuje wyłącznie funkcja `submit_result`. Analiza, model danych, RODO, znane ograniczenia i wyniki testów RLS: [docs/backend.md](docs/backend.md).
 
 ## Struktura
 
@@ -34,6 +47,9 @@ data/answers.txt        lista haseł dnia w kolejności wypadania
 scripts/build_words.py  buduje words.js ze słownika SJP.PL
 scripts/candidates.py   wypisuje kandydatów na nowe hasła dnia
 tests/                  testy uruchamiane w GitHub Actions
+tests/manual/           ręczne testy RLS z konsoli przeglądarki
+supabase/migrations/    schemat bazy, polityki RLS i funkcje RPC
+docs/backend.md         dokument analityczny backendu
 ```
 
 ## Słownik
@@ -54,7 +70,13 @@ python scripts/candidates.py slowa.txt pl_full.txt > kandydaci.txt
 
 ## Uruchomienie lokalnie
 
-Wystarczy otworzyć `index.html` w przeglądarce. Nie trzeba niczego instalować.
+Sama gra działa po otwarciu `index.html` w przeglądarce. Logowanie wymaga adresu z listy przekierowań w Supabase, więc do jego testów uruchom serwer i wejdź na http://localhost:8000/:
+
+```bash
+python -m http.server 8000
+```
+
+Migracje z `supabase/migrations/` uruchamia się po kolei, według numerów, w SQL Editor Supabase albo przez Supabase CLI.
 
 ## Testy
 
@@ -70,8 +92,8 @@ node tests/test_skladnia.js        # skrypty z index.html i words.js parsują si
 
 ## Plany
 
-- Konta i wspólne rankingi
-- Logowanie przez Discorda i bot z wynikami serwera
+- Ukrycie haseł przed publicznym ogłoszeniem rankingów
+- Bot Discorda z wynikami serwera
 - Kolejne gry (polski odpowiednik Krilliona, Connections)
 
 ## Licencja

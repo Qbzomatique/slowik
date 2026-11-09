@@ -1,11 +1,12 @@
 # Słowik: konta, logowanie przez Discorda i rankingi
 
-Dokument analityczny. Wersja 1.1, 4 listopada 2026. Status: **zaakceptowany**.
+Dokument analityczny. Wersja 1.2, 9 listopada 2026. Status: **zaakceptowany**.
 
 | Wersja | Data | Zmiany |
 |---|---|---|
 | 1.0 | 2026-11-04 | Pierwsza wersja |
 | 1.1 | 2026-11-04 | Mierniki liczone z bazy; świadome zatwierdzenie nicku (`nick_confirmed`, privacy by design); ograniczenie L9 (wiek graczy); etap ukrycia haseł w planie |
+| 1.2 | 2026-11-09 | Wyniki ręcznych testów RLS; klucz publishable zamiast `anon` |
 
 ## 1. Cel
 
@@ -44,7 +45,7 @@ flowchart LR
 
 - **Frontend** zostaje jednym plikiem `index.html` na GitHub Pages, bez kroku budowania. `supabase-js` jest ładowany z CDN w przypiętej dokładnej wersji, najlepiej z atrybutem `integrity` (SRI).
 - **Backend** to projekt Supabase w regionie UE (Frankfurt, `eu-central-1`): Auth z dostawcą Discord, Postgres z Row Level Security i funkcje RPC.
-- **Sekrety:** w repo są tylko publiczny URL projektu i klucz `anon`. Client secret Discorda wpisuje autor w panelu Supabase. Klucz `service_role` nie trafia nigdzie poza panel Supabase.
+- **Sekrety:** w repo są tylko publiczny URL projektu i klucz publishable (następca klucza `anon`, ta sama rola w bazie). Client secret Discorda wpisuje autor w panelu Supabase. Klucz `service_role` nie trafia nigdzie poza panel Supabase.
 - **Odporność:** każde wywołanie Supabase jest opakowane w obsługę błędów. Brak sieci lub awaria daje komunikat po polsku, a gra działa dalej na localStorage.
 
 ### Kluczowe decyzje
@@ -134,8 +135,8 @@ Zasada: **minimum danych**. Trzymamy tylko to, co jest potrzebne do rankingu.
 
 ### 5.2 Bezpieczeństwo
 
-- W repo są tylko URL projektu i klucz `anon`. Wszystko, co klucz `anon` umożliwia, jest ograniczone przez RLS i uprawnienia funkcji.
-- Klucz `service_role`, client secret Discorda i hasło do bazy nie trafiają do repo ani do rozmów z asystentem.
+- W repo są tylko URL projektu i klucz publishable. Wszystko, co ten klucz umożliwia, jest ograniczone przez RLS i uprawnienia funkcji.
+- Klucze secret i `service_role`, client secret Discorda i hasło do bazy nie trafiają do repo ani do rozmów z asystentem.
 - RLS jest włączone na każdej tabeli w schemacie `public`. Domyślnie wszystko jest zabronione, a polityki dopuszczają tylko opisane wyżej operacje.
 - Funkcje `SECURITY DEFINER` mają ustawione `search_path = ''` i używają w pełni kwalifikowanych nazw obiektów, co zapobiega podmianie obiektów.
 - Prawa `EXECUTE` są nadane jawnie: rankingi dla `anon` i `authenticated`, zapis, zmiana nicku i usunięcie konta tylko dla `authenticated`.
@@ -237,30 +238,30 @@ Funkcje `SECURITY DEFINER` działają z prawami właściciela i omijają RLS, dl
 
 ## 9. Lista kontrolna ręcznych testów RLS
 
-Do przejścia razem po wdrożeniu migracji. Testy są wykonywane z konsoli przeglądarki (`supabase-js` z kluczem `anon`) jako niezalogowany gracz, gracz A i gracz B.
+Przebieg 9 listopada 2026, na produkcyjnym projekcie. R1–R4: zapytania do API bez logowania. R5–R13, R15, R16: skrypt `tests/manual/rls_console.js` w konsoli przeglądarki jako gracz A. R14, R17–R20: interfejs gry na dwóch kontach Discord. W kolumnie „Wynik” przy odmowie podany jest kod błędu Postgresa.
 
 | # | Scenariusz | Oczekiwany wynik | Wynik |
 |---|---|---|---|
-| R1 | Niezalogowany: `insert` do `results` | Błąd uprawnień | — |
-| R2 | Niezalogowany: `submit_result` | Błąd: brak logowania | — |
-| R3 | Niezalogowany: `select` z `results` i `profiles` | Pusty wynik | — |
-| R4 | Niezalogowany: `ranking_day`, `ranking_overall` | Działa, tylko nick i liczby | — |
-| R5 | A: bezpośredni `insert` do `results` (nawet z własnym `user_id`) | Błąd uprawnień | — |
-| R6 | A: `submit_result` na dziś | Zapisane | — |
-| R7 | A: drugi `submit_result` na dziś z innymi próbami | Zwraca pierwszy wynik, nic nie nadpisane | — |
-| R8 | A: `submit_result` na dzień dzisiejszy +2 i −2 | Błąd: dzień poza oknem | — |
-| R9 | A: 7 prób, 0 prób, próba 4-literowa, próba z cyfrą, przegrana z 3 próbami | Błąd walidacji | — |
-| R10 | A: `update` i `delete` na swoim wierszu `results` | Błąd uprawnień lub 0 zmienionych wierszy | — |
-| R11 | A: `select` z `results` | Tylko własne wiersze | — |
-| R12 | A: `select` z `profiles` | Tylko własny profil | — |
-| R13 | A: bezpośredni `update` `profiles` (nick lub id) | Błąd uprawnień lub 0 wierszy | — |
-| R14 | A: `set_nick` na nick zajęty przez B (inna wielkość liter) | Błąd: nick zajęty | — |
-| R15 | A: `set_nick` z niedozwolonymi znakami lub złej długości | Błąd walidacji | — |
-| R16 | Rankingi nie zawierają `user_id`, prób, e-maila ani danych Discorda | Potwierdzone | — |
-| R17 | A: `delete_my_account` | Konto, profil i wyniki A znikają, B bez zmian | — |
-| R18 | Po R17 stary token A: `submit_result` | Błąd | — |
-| R19 | Nowy gracz C bez zatwierdzonego nicku: `submit_result`, potem `ranking_day` i `ranking_overall` | Wynik C zapisany, ale C nie występuje w żadnym rankingu | — |
-| R20 | C: `set_nick`, potem rankingi | C pojawia się w rankingach razem z wcześniejszym wynikiem | — |
+| R1 | Niezalogowany: `insert` do `results` | Błąd uprawnień | ✅ 42501 |
+| R2 | Niezalogowany: `submit_result` | Błąd: brak logowania | ✅ 42501 |
+| R3 | Niezalogowany: `select` z `results` i `profiles` | Odmowa dostępu | ✅ 42501 |
+| R4 | Niezalogowany: `ranking_day`, `ranking_overall` | Działa, tylko nick i liczby | ✅ |
+| R5 | A: bezpośredni `insert` do `results` (nawet z własnym `user_id`) | Błąd uprawnień | ✅ |
+| R6 | A: `submit_result` na dziś | Zapisane | ✅ |
+| R7 | A: drugi `submit_result` na dziś z innymi próbami | Zwraca pierwszy wynik, nic nie nadpisane | ✅ |
+| R8 | A: `submit_result` na dzień dzisiejszy +2 i −2 | Błąd: dzień poza oknem | ✅ |
+| R9 | A: 7 prób, 0 prób, próba 4-literowa, próba z cyfrą, przegrana z 3 próbami | Błąd walidacji | ✅ |
+| R10 | A: `update` i `delete` na swoim wierszu `results` | Błąd uprawnień lub 0 zmienionych wierszy | ✅ |
+| R11 | A: `select` z `results` | Tylko własne wiersze | ⏳ OK przy jednym koncie, do powtórki z dwoma |
+| R12 | A: `select` z `profiles` | Tylko własny profil | ⏳ OK przy jednym koncie, do powtórki z dwoma |
+| R13 | A: bezpośredni `update` `profiles` (nick lub id) | Błąd uprawnień lub 0 wierszy | ✅ |
+| R14 | A: `set_nick` na nick zajęty przez B (inna wielkość liter) | Błąd: nick zajęty | ✅ |
+| R15 | A: `set_nick` z niedozwolonymi znakami lub złej długości | Błąd walidacji | ✅ |
+| R16 | Rankingi nie zawierają `user_id`, prób, e-maila ani danych Discorda | Potwierdzone | ✅ |
+| R17 | A: `delete_my_account` | Konto, profil i wyniki A znikają, B bez zmian | ✅ |
+| R18 | Po R17 stary token A: `submit_result` | Błąd | ✅ 23503 |
+| R19 | Nowy gracz C bez zatwierdzonego nicku: `submit_result`, potem `ranking_day` i `ranking_overall` | Wynik C zapisany, ale C nie występuje w żadnym rankingu | ✅ |
+| R20 | C: `set_nick`, potem rankingi | C pojawia się w rankingach razem z wcześniejszym wynikiem | ✅ |
 
 ## 10. Limity darmowego planu Supabase
 
