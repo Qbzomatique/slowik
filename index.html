@@ -565,7 +565,11 @@ function applySettings(){document.body.classList.toggle('cb',settings.cb);$('#sS
 }));
 
 /* konto i ranking: UI */
-const SB_SRC='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js';
+// W Discordzie gra działa w ramce za proxy: CDN jest blokowany, a Supabase dostępny pod zmapowaną ścieżką.
+const IN_DISCORD=new URLSearchParams(location.search).has('frame_id');
+const DISCORD_CLIENT_ID='1567394206391996457'; // identyfikator publiczny
+const API_URL=IN_DISCORD?location.origin+'/supabase':SUPABASE_URL;
+const SB_SRC=IN_DISCORD?'vendor/supabase-2.118.0.js':'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js';
 const SB_SRI='sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const redirectTo=()=>location.origin+location.pathname.replace(/index\.html$/,'');
@@ -573,10 +577,10 @@ const redirectTo=()=>location.origin+location.pathname.replace(/index\.html$/,''
 function loadSupabase(){
   return new Promise((resolve,reject)=>{
     const s=document.createElement('script');
-    s.src=SB_SRC;s.integrity=SB_SRI;s.crossOrigin='anonymous';s.onerror=reject;
+    s.src=SB_SRC;if(!IN_DISCORD){s.integrity=SB_SRI;s.crossOrigin='anonymous'}s.onerror=reject;
     s.onload=async()=>{
       try{
-        const c=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{flowType:'pkce',storageKey:'slowik.auth',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+        const c=window.supabase.createClient(API_URL,SUPABASE_KEY,{auth:{flowType:'pkce',storageKey:'slowik.auth',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
         await c.auth.getSession(); // czeka na wymianę kodu po powrocie z Discorda
         resolve(c);
       }catch(e){reject(e)}
@@ -684,6 +688,14 @@ async function loadRanking(kind){
   const foot=kind==='day'?'<p class="muted">* tryb trudny (deklaracja gracza)</p>':'';
   el.innerHTML=title+`<table class="rank"><thead>${head}</thead><tbody>${rows}</tbody></table>`+foot+hint;
 }
+
+async function startDiscord(){
+  try{
+    const {DiscordSDK}=await import('./vendor/discord-sdk-2.5.0.js');
+    await new DiscordSDK(DISCORD_CLIENT_ID).ready();
+  }catch(e){toast('Połączenie z Discordem nie powiodło się',3500)}
+}
+if(IN_DISCORD){$('#bAcct').hidden=true;startDiscord()} // logowanie w ramce dojdzie w kolejnym kroku
 
 applySettings();newGame('daily');
 onlineReady=online.init().then(ok=>{
