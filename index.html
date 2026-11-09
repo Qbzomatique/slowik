@@ -114,6 +114,10 @@ main{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;
 textarea#sharebox{width:100%;margin-top:10px;font:13px/1.4 var(--body);background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:8px}
 @media (max-height:640px){.key{height:44px}}
 
+/* Discord na telefonie nakłada własne przyciski na górę ramki; inset bywa pusty, stąd minimum */
+body.discord-mobile header{padding-top:max(52px,calc(var(--discord-safe-area-inset-top,0px) + 8px))}
+body.discord-mobile #kbd{padding-bottom:max(12px,var(--discord-safe-area-inset-bottom,0px))}
+
 /* konto i ranking */
 .acct{border:1px solid var(--line);background:transparent;border-radius:999px;height:36px;padding:0 12px;font-size:13px;font-weight:500;
   display:inline-flex;align-items:center;gap:6px;max-width:220px;position:relative}
@@ -728,7 +732,10 @@ async function discordLogin(sdk){
   if(out.guild_id){guildId=out.guild_id;$('#tGuild').hidden=false}
 }
 setInterval(()=>{if(guildId&&!$('#dStats').hidden&&!$('#pGuild').hidden)loadRanking('guild',true)},20000);
-if(IN_DISCORD){$('#bAcct').hidden=true;$('#acctOut').hidden=true;startDiscord()}
+if(IN_DISCORD){
+  if(new URLSearchParams(location.search).get('platform')==='mobile')document.body.classList.add('discord-mobile');
+  $('#bAcct').hidden=true;$('#acctOut').hidden=true;startDiscord();
+}
 
 applySettings();newGame('daily');
 onlineReady=online.init().then(ok=>{
