@@ -248,7 +248,7 @@ end;
 $$;
 
 -- Gra niezalogowanego: bez stanu, klient wysyła wszystkie dotychczasowe próby.
--- Hasło wraca po trafieniu albo przy 6 próbach (znane ograniczenie L10).
+-- Nigdy nie zwraca hasła: po przegranej poznają je tylko zalogowani.
 create function public.check_guess(p_day integer, p_words text[])
 returns jsonb
 language plpgsql
@@ -275,8 +275,7 @@ begin
       select jsonb_agg(to_jsonb(private.score(t.word, v_answer)) order by t.pos)
       from unnest(p_words) with ordinality as t(word, pos)
     ),
-    'status', case when v_won then 'won' when cardinality(p_words) = 6 then 'lost' else 'playing' end,
-    'answer', case when v_won or cardinality(p_words) = 6 then v_answer end
+    'status', case when v_won then 'won' when cardinality(p_words) = 6 then 'lost' else 'playing' end
   );
 end;
 $$;

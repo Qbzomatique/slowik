@@ -1,6 +1,6 @@
 # Słowik: ukrycie haseł dnia
 
-Dokument analityczny. Wersja 1.1, 9 listopada 2026. Status: **zaakceptowany (wariant A)**. Rozwija ograniczenia L1–L3 z [backend.md](backend.md).
+Dokument analityczny. Wersja 1.2, 9 listopada 2026. Status: **zaakceptowany (wariant A)**. Rozwija ograniczenia L1–L3 z [backend.md](backend.md).
 
 ## 1. Problem
 
@@ -54,7 +54,7 @@ sequenceDiagram
 |---|---|---|
 | `play_guess(day, word, hard)` | `authenticated` | Dopisuje próbę do `games`, sprawdza okno dni, słownik, limit 6 prób i tryb trudny. Liczy kolory. Po końcu gry zapisuje `results` i zwraca hasło. |
 | `get_game(day)` | `authenticated` | Stan gry gracza, także po zmianie urządzenia. |
-| `check_guess(day, words[])` | `anon` | Dla niezalogowanych: kolory dla listy prób. Bez stanu. Hasło zwraca dopiero, gdy lista zawiera trafienie albo ma 6 prób. |
+| `check_guess(day, words[])` | `anon` | Dla niezalogowanych: kolory dla listy prób. Bez stanu. Nigdy nie zwraca hasła: po przegranej poznają je tylko zalogowani. |
 
 `submit_result` zostaje wyłączona dla klientów. Tabela `games` (próby w toku) ma te same zasady RLS co `results`: gracz czyta tylko swoje, zapis tylko przez funkcję.
 
@@ -70,7 +70,7 @@ Liczenie kolorów w SQL musi dawać te same wyniki co funkcja `score` z gry. Spr
 
 | # | Ograniczenie | Skutek | Decyzja |
 |---|---|---|---|
-| L10 | `check_guess` jest bez stanu i zwraca hasło przy 6 próbach, więc jedno zapytanie z 6 dowolnymi słowami ujawnia hasło. Potem można zagrać na koncie. | Zdeterminowany oszust nadal może wygrać w 1 próbie. Etap zatrzymuje podgląd w `words.js` i zmyślone wyniki, a nie celowe obejście. | Akceptujemy, bo przegrany niezalogowany gracz powinien poznać hasło, a drugie konto (L11) daje to samo. Ostrzejsza ochrona: wariant C. |
+| L10 | Niezalogowany może przez `check_guess` odpytywać kolory i rozpoznać hasło bez limitu gier, a potem zagrać na koncie. | Oszustwo wymaga skryptu lub cierpliwości; hasła nie da się już dostać jednym zapytaniem. | Akceptujemy. Niezalogowany po przegranej nie widzi hasła (nagroda za logowanie). Pełna ochrona: wariant C. |
 | L11 | Drugie konto Discord do rozpoznania hasła | Jak L10 | Akceptujemy |
 | L12 | Okno ±1 dzień pozwala zagrać słowo „jutrzejsze” wcześniej | Gracz może poznać hasło kilka godzin przed innymi | Akceptujemy ze względu na strefy czasowe |
 | L13 | Brak limitu wywołań RPC | Masowe odpytywanie | Monitoring w panelu, limity później |
