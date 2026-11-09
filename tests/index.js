@@ -25,7 +25,7 @@ function loadOnline() {
   const code = inlineScripts().join('\n');
   const block = code.match(/\/\/ online:start\r?\n([\s\S]*?)\/\/ online:end/);
   if (!block) fail('Nie znalazłem w index.html bloku „// online:start … // online:end”.');
-  return vm.runInNewContext(`${block[1]}\n({ buildPayload, onlineError, createOnline })`, { setTimeout, clearTimeout, console });
+  return vm.runInNewContext(`${block[1]}\n({ applyGuess, needsColors, emptyDaily, onlineError, createOnline })`, { setTimeout, clearTimeout, console });
 }
 
 function fail(msg) {

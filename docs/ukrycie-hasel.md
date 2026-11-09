@@ -1,6 +1,6 @@
 # Słowik: ukrycie haseł dnia
 
-Dokument analityczny. Wersja 1.2, 9 listopada 2026. Status: **zaakceptowany (wariant A)**. Rozwija ograniczenia L1–L3 z [backend.md](backend.md).
+Dokument analityczny. Wersja 1.3, 9 listopada 2026. Status: **zaakceptowany (wariant A)**. Rozwija ograniczenia L1–L3 z [backend.md](backend.md).
 
 ## 1. Problem
 
@@ -64,7 +64,7 @@ Liczenie kolorów w SQL musi dawać te same wyniki co funkcja `score` z gry. Spr
 
 - Trwającą lokalną grę z dnia wdrożenia klient odtwarza przez `play_guess` lub `check_guess`.
 - Wyniki już zapisane w `results` zostają bez zmian.
-- Logowanie po grze jako niezalogowany przestaje dawać wynik w rankingu, bo takiej gry serwer nie widział po kolei. **Do rankingu trafia tylko gra rozegrana po zalogowaniu.** To zmiana względem US-2 w `backend.md`.
+- Po zalogowaniu lokalne próby z dzisiejszej gry są odtwarzane po kolei przez `play_guess`. Dają wynik w rankingu i, przy przegranej, hasło. Nie zwiększa to możliwości oszustwa ponad L10, bo serwer i tak sprawdza każdą próbę. Gdy gra na koncie już istnieje, wygrywa stan z konta.
 
 ## 4. Co zostaje niezabezpieczone
 

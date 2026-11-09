@@ -1,0 +1,18 @@
+name: Podtrzymanie Supabase
+
+# Darmowy projekt usypia się po 7 dniach bez ruchu, a uśpiony wyłączyłby słowo dnia.
+# Klucz publishable jest publiczny z założenia.
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wywołaj lekką funkcję
+        run: |
+          curl -fsS -X POST "https://prqmfzsvlskrttyoqbat.supabase.co/rest/v1/rpc/day_number" \
+            -H "apikey: sb_publishable_iRn2SepcsSPdtg_GUS2NeQ_O9BpRKn2" \
+            -H "Content-Type: application/json" -d '{}'

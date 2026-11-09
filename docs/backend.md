@@ -1,12 +1,13 @@
 # Słowik: konta, logowanie przez Discorda i rankingi
 
-Dokument analityczny. Wersja 1.2, 9 listopada 2026. Status: **zaakceptowany**.
+Dokument analityczny. Wersja 1.3, 9 listopada 2026. Status: **zaakceptowany**.
 
 | Wersja | Data | Zmiany |
 |---|---|---|
 | 1.0 | 2026-11-04 | Pierwsza wersja |
 | 1.1 | 2026-11-04 | Mierniki liczone z bazy; świadome zatwierdzenie nicku (`nick_confirmed`, privacy by design); ograniczenie L9 (wiek graczy); etap ukrycia haseł w planie |
 | 1.2 | 2026-11-09 | Wyniki ręcznych testów RLS; klucz publishable zamiast `anon` |
+| 1.3 | 2026-11-09 | Ograniczenia L1–L3 rozwiązuje [ukrycie-hasel.md](ukrycie-hasel.md): słowo dnia wymaga sieci, a wynik powstaje z `play_guess` zamiast `submit_result`. Ten dokument opisuje stan sprzed tej zmiany tam, gdzie mówi o grze offline i `submit_result`. |
 
 ## 1. Cel
 

@@ -18,8 +18,8 @@ Polskie znaki to osobne litery: `ą` to nie `a`, a `ł` to nie `l`.
 
 ## Funkcje
 
-- **Słowo dnia**: jedno dla wszystkich, zmienia się o północy (#1 = 4 listopada 2026).
-- **Trening**: losowe słowa bez limitu, nie liczy się do statystyk.
+- **Słowo dnia**: jedno dla wszystkich, zmienia się o północy (#1 = 4 listopada 2026). Próby sprawdza serwer, więc hasła nie ma w przeglądarce.
+- **Trening**: losowe słowa bez limitu, działa offline, nie liczy się do statystyk.
 - Statystyki, serie i rozkład prób zapisywane w przeglądarce.
 - Udostępnianie wyniku jako siatki emoji.
 - Tryb trudny i kolory dla daltonistów.
@@ -42,14 +42,14 @@ Frontend nie ma kroku budowania. W repo jest tylko publiczny klucz publishable, 
 
 ```
 index.html              gra (HTML, CSS i JS w jednym pliku)
-words.js                hasła i słownik, generowane skryptem
-data/answers.txt        lista haseł dnia w kolejności wypadania
+words.js                pula Treningu i słownik, generowane skryptem
+data/answers.txt        alfabetyczna pula słów do Treningu
 scripts/build_words.py  buduje words.js ze słownika SJP.PL
 scripts/candidates.py   wypisuje kandydatów na nowe hasła dnia
 tests/                  testy uruchamiane w GitHub Actions
 tests/manual/           ręczne testy RLS z konsoli przeglądarki
 supabase/migrations/    schemat bazy, polityki RLS i funkcje RPC
-docs/backend.md         dokument analityczny backendu
+docs/                   analizy: backend.md i ukrycie-hasel.md
 ```
 
 ## Słownik
@@ -60,7 +60,7 @@ Próby są sprawdzane w [słowniku do gier SJP.PL](https://sjp.pl/sl/growy/). Pl
 python scripts/build_words.py ścieżka/do/slowa.txt
 ```
 
-Hasła dnia to osobna lista zwykłych słów w `data/answers.txt`. Kolejność w pliku wyznacza, które słowo wypada którego dnia, więc **nowe hasła dopisuj na końcu**. Zmiana kolejności zmieniłaby słowa minionych dni.
+Kolejność haseł dnia jest tylko w bazie (`private.answers`), wylosowana przy migracji. `data/answers.txt` to alfabetyczna pula do Treningu. Nowe hasła trzeba dodać także migracją na koniec listy w bazie.
 
 Kandydatów na nowe hasła wybiera `scripts/candidates.py`: bierze pięcioliterowe słowa z [listy frekwencyjnej FrequencyWords](https://github.com/hermitdave/FrequencyWords) (polskie napisy filmowe), zostawia te ze słownika SJP.PL i spoza obecnej listy, a potem sortuje je od najczęstszych. Wynik trzeba przejrzeć ręcznie, bo słownik zawiera też formy odmienione.
 
@@ -83,16 +83,14 @@ Migracje z `supabase/migrations/` uruchamia się po kolei, według numerów, w S
 Każdy push na `main` uruchamia testy w GitHub Actions (`.github/workflows/testy.yml`). Wystarczą Python 3.10+ i Node, bez instalowania pakietów. Lokalnie każdy test to jedno polecenie:
 
 ```bash
-python tests/test_hasla.py         # words.js zgodny z answers.txt; hasła mają 5 polskich liter, są w słowniku, bez powtórek
-python tests/test_minione_dni.py   # hasła minionych dni bez zmian względem HEAD~1 (albo: ... <commit>); w CI względem ostatniego zielonego commita
+python tests/test_hasla.py         # words.js zgodny z answers.txt; pula posortowana; hasła mają 5 polskich liter, są w słowniku, bez powtórek
 node tests/test_score.js           # kolorowanie prób, w tym powtórzone litery i polskie znaki
-node tests/test_online.js          # konto i ranking: wynik do wysłania, kolejka, logowanie po grze (Supabase zamockowany)
+node tests/test_online.js          # słowo dnia i konto: próby przez serwer, odtwarzanie gry po zalogowaniu (Supabase zamockowany)
 node tests/test_skladnia.js        # skrypty z index.html i words.js parsują się bez błędów
 ```
 
 ## Plany
 
-- Ukrycie haseł przed publicznym ogłoszeniem rankingów
 - Bot Discorda z wynikami serwera
 - Kolejne gry (polski odpowiednik Krilliona, Connections)
 

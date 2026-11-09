@@ -170,9 +170,9 @@ textarea#sharebox{width:100%;margin-top:10px;font:13px/1.4 var(--body);backgroun
   <p><b>W</b> nie występuje w słowie.</p>
   <h3>Tryby</h3>
   <p>Próba musi być prawdziwym słowem, w dowolnej formie: <b>kotki</b> albo <b>pisze</b> też przejdą.</p>
-  <p><b>Słowo dnia</b> jest jedno dla wszystkich i zmienia się o północy. <b>Trening</b> losuje nowe słowo bez limitu i nie liczy się do statystyk.</p>
+  <p><b>Słowo dnia</b> jest jedno dla wszystkich i zmienia się o północy. Sprawdza je serwer, więc potrzebny jest internet. <b>Trening</b> losuje nowe słowo bez limitu, działa offline i nie liczy się do statystyk.</p>
   <h3>Konto i ranking</h3>
-  <p style="font-size:13.5px">Logowanie przez Discorda jest opcjonalne i daje udział w rankingu. Zapisujemy wtedy tylko: identyfikator konta, nick (widoczny w rankingu dopiero po Twoim zatwierdzeniu) i wyniki słowa dnia. Discord przekazuje też nazwę i e-mail; nie pokazujemy ich nigdzie. Trening nie trafia do rankingu. Konto ze wszystkimi danymi usuniesz w menu konta.</p>
+  <p style="font-size:13.5px">Logowanie przez Discorda jest opcjonalne i daje udział w rankingu. Zapisujemy wtedy tylko: identyfikator konta, nick (widoczny w rankingu dopiero po Twoim zatwierdzeniu) i wyniki słowa dnia. Discord przekazuje też nazwę i e-mail; nie pokazujemy ich nigdzie. Trening nie trafia do rankingu. Po przegranej hasło dnia zobaczą tylko zalogowani. Konto ze wszystkimi danymi usuniesz w menu konta.</p>
   <h3>Słownik</h3>
   <p style="font-size:13px;color:var(--muted)">Słownik do gier <a href="https://sjp.pl" style="color:var(--accent)">SJP.PL</a>, licencja CC BY 4.0.</p>
 </div></div>
@@ -233,7 +233,7 @@ textarea#sharebox{width:100%;margin-top:10px;font:13px/1.4 var(--body);backgroun
 <div class="scrim" id="dSet" hidden><div class="modal" role="dialog" aria-labelledby="hSet">
   <button class="icon close" data-close aria-label="Zamknij"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
   <h2 id="hSet">Ustawienia</h2>
-  <label class="setting" for="sStrict"><div>Tylko słowa ze słownika<small>Odrzuca słowa, których nie ma w słowniku SJP.PL. Po wyłączeniu gra przyjmie dowolne 5 liter.</small></div><input type="checkbox" class="sw" id="sStrict"></label>
+  <label class="setting" for="sStrict"><div>Tylko słowa ze słownika<small>Dotyczy Treningu: po wyłączeniu przyjmie dowolne 5 liter. Słowo dnia zawsze wymaga słowa ze słownika.</small></div><input type="checkbox" class="sw" id="sStrict"></label>
   <label class="setting" for="sHard"><div>Tryb trudny<small>Odkryte podpowiedzi trzeba wykorzystać w kolejnych próbach.</small></div><input type="checkbox" class="sw" id="sHard"></label>
   <label class="setting" for="sCb"><div>Kolory dla daltonistów<small>Pomarańczowy i niebieski zamiast zielonego i żółtego.</small></div><input type="checkbox" class="sw" id="sCb"></label>
 </div></div>
@@ -249,7 +249,6 @@ const chars=w=>Array.from(w);
 const LETTERS=/^[a-ząćęłńóśźż]$/;
 
 function dayNumber(){const n=new Date();return Math.floor((Date.UTC(n.getFullYear(),n.getMonth(),n.getDate())-START)/864e5)+1}
-function dailyWord(n){return ANSWERS[((n-1)%ANSWERS.length+ANSWERS.length)%ANSWERS.length]}
 
 function score(guess,answer){
   const g=chars(guess),a=chars(answer),res=Array(5).fill('miss'),left={};
@@ -259,28 +258,34 @@ function score(guess,answer){
 }
 
 // online:start
-/* Konto i ranking (Supabase). Logika bez DOM, żeby testy mogły ją uruchomić z atrapą klienta.
-   Wszystko jest opcjonalne: bez sieci gra działa dalej na localStorage. */
+/* Konto, sprawdzanie prób i ranking (Supabase). Logika bez DOM, żeby testy mogły ją uruchomić z atrapą klienta.
+   Hasło dnia zna tylko serwer, więc słowo dnia wymaga sieci; Trening działa bez niej. */
 const SUPABASE_URL='https://prqmfzsvlskrttyoqbat.supabase.co';
 const SUPABASE_KEY='sb_publishable_iRn2SepcsSPdtg_GUS2NeQ_O9BpRKn2'; // klucz publiczny; dane chroni RLS
 const OUR_ERRORS=['22023','28000','23505','P0002']; // błędy z naszych funkcji SQL, z komunikatem po polsku
 
-// Wynik do wysłania albo null (trening i niedokończona gra nigdy nie trafiają do rankingu).
-function buildPayload(game,mode){
-  if(mode!=='daily'||!game||!(game.day>=1)||game.status==='playing')return null;
-  if(!Array.isArray(game.guesses)||!game.guesses.length)return null;
-  return {p_day:game.day,p_guesses:game.guesses.slice(),p_won:game.status==='won',p_hard_mode:!!game.hard};
-}
-
 function onlineError(err){
   if(err&&OUR_ERRORS.includes(err.code))return err.message;
-  if(err&&err.code==='TIMEOUT')return 'Serwer rankingu nie odpowiada. Gra działa dalej.';
-  if(err&&/fetch|network|load failed/i.test(err.message||''))return 'Brak połączenia z serwerem rankingu. Gra działa dalej.';
-  return 'Serwer rankingu ma problem. Gra działa dalej.';
+  if(err&&err.code==='TIMEOUT')return 'Serwer nie odpowiada. Słowo dnia wymaga połączenia, Trening działa bez niego.';
+  if(err&&/fetch|network|load failed/i.test(err.message||''))return 'Brak połączenia z serwerem. Słowo dnia wymaga internetu, Trening działa bez niego.';
+  return 'Serwer ma problem. Słowo dnia jest chwilowo niedostępne, Trening działa.';
 }
 
+function emptyDaily(day){return {day,guesses:[],results:[],status:'playing',hard:false,answer:null}}
+// Dopisuje odpowiedź serwera do stanu gry. Po wygranej hasłem jest ostatnia próba.
+function applyGuess(game,word,reply){
+  game.guesses.push(word);game.results.push(reply.result);game.status=reply.status;
+  game.answer=reply.answer||(reply.status==='won'?word:null);
+  return game;
+}
+function fromServer(day,data){
+  return {day,guesses:data.guesses,results:data.results,status:data.status,hard:!!data.hard_mode,answer:data.answer||null};
+}
+// Gra zapisana przez starszą wersję strony nie ma kolorów (i miała jawne hasło).
+function needsColors(game){return !!game&&game.guesses.length>0&&(game.results||[]).length!==game.guesses.length}
+
 function createOnline({store,dayNumber,loadClient,timeoutMs=8000}){
-  let client=null,session=null,profile=null;
+  let client=null,session=null,profile=null,signedFor=null;
   const listeners=[];
   const emit=(type,data)=>listeners.forEach(f=>{try{f(type,data)}catch(e){}});
   const withTimeout=p=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej({code:'TIMEOUT'}),timeoutMs))]);
@@ -289,8 +294,6 @@ function createOnline({store,dayNumber,loadClient,timeoutMs=8000}){
     catch(e){return {error:e&&e.code?e:{message:String(e&&e.message||e)}}}
   }
   const uid=()=>session&&session.user&&session.user.id;
-  const sentDays=()=>(store.get('sent',{})[uid()]||[]);
-  function markSent(day){const all=store.get('sent',{}),list=(all[uid()]||[]).filter(d=>d!==day);list.push(day);all[uid()]=list.slice(-10);store.set('sent',all)}
 
   async function loadProfile(){
     try{
@@ -301,39 +304,14 @@ function createOnline({store,dayNumber,loadClient,timeoutMs=8000}){
     emit('change');
     if(profile&&!profile.nick_confirmed)emit('needNick',profile.nick);
   }
-
-  // Po zalogowaniu (także po odświeżeniu strony): dzisiejszy wynik z localStorage, jeśli jeszcze nie poszedł.
-  async function afterSignIn(){
-    const saved=buildPayload(store.get('daily',null),'daily');
-    if(saved&&Math.abs(saved.p_day-dayNumber())<=1&&!sentDays().includes(saved.p_day))enqueue(saved);
-    await loadProfile();
-    await flush();
+  async function afterSignIn(){await loadProfile();emit('signedIn')}
+  async function signOut(){if(client)await client.auth.signOut().catch(()=>{});session=null;signedFor=null;profile=null;emit('change')}
+  function noteSession(s){
+    session=s;
+    if(!s){signedFor=null;profile=null;emit('change');return}
+    if(s.user.id!==signedFor){signedFor=s.user.id;setTimeout(afterSignIn,0)} // poza wywołaniem zwrotnym auth
+    else emit('change');
   }
-
-  function enqueue(payload){
-    const pending=store.get('pending',[]).filter(p=>p.p_day!==payload.p_day);
-    pending.push(payload);store.set('pending',pending);
-  }
-
-  // Wysyła zaległe wyniki. Zostawia te, których nie udało się wysłać z powodu sieci;
-  // porzuca te spoza okna ±1 dzień i odrzucone przez walidację serwera.
-  async function flush(){
-    const out=[];
-    if(!client||!uid())return out;
-    const today=dayNumber(),keep=[];
-    for(const p of store.get('pending',[])){
-      if(Math.abs(p.p_day-today)>1)continue;
-      const {data,error}=await call('submit_result',p);
-      if(!error){markSent(p.p_day);out.push({ok:true,day:p.p_day,already:!!(data&&data.already_saved)})}
-      else if(error.code==='22023')out.push({ok:false,day:p.p_day,message:onlineError(error)});
-      else{keep.push(p);out.push({ok:false,day:p.p_day,message:onlineError(error),retry:true})}
-    }
-    store.set('pending',keep);
-    out.forEach(r=>emit('submitted',r));
-    return out;
-  }
-
-  async function signOut(){if(client)await client.auth.signOut().catch(()=>{});session=null;profile=null;emit('change')}
 
   return {
     onChange(f){listeners.push(f)},
@@ -342,12 +320,8 @@ function createOnline({store,dayNumber,loadClient,timeoutMs=8000}){
     get profile(){return profile},
     async init(){
       try{client=await loadClient()}catch(e){client=null;return false}
-      client.auth.onAuthStateChange((event,s)=>{
-        const was=uid();session=s;
-        if(!s){profile=null;emit('change');return}
-        if(was!==uid())setTimeout(afterSignIn,0); // poza wywołaniem zwrotnym auth
-        else emit('change');
-      });
+      client.auth.onAuthStateChange((event,s)=>noteSession(s));
+      try{const {data}=await client.auth.getSession();if(data&&data.session)noteSession(data.session)}catch(e){}
       return true;
     },
     async signIn(redirectTo){
@@ -356,11 +330,39 @@ function createOnline({store,dayNumber,loadClient,timeoutMs=8000}){
       return error?{error:onlineError(error)}:{};
     },
     signOut,
-    async submitGame(game,mode){
-      const p=buildPayload(game,mode);if(!p)return [];
-      enqueue(p);return flush();
+    // Jedna próba słowa dnia. Zalogowany gra na koncie, niezalogowany wysyła wszystkie próby i nie dostaje hasła.
+    async guess(game,word){
+      if(!client)return {error:'Słowo dnia jest chwilowo niedostępne. Zagraj w Trening.'};
+      if(uid()){
+        const r=await call('play_guess',{p_day:game.day,p_word:word,p_hard:!!game.hard});
+        return r.error?{error:onlineError(r.error)}:r.data;
+      }
+      const r=await call('check_guess',{p_day:game.day,p_words:[...game.guesses,word]});
+      if(r.error)return {error:onlineError(r.error)};
+      return {result:r.data.results[r.data.results.length-1],status:r.data.status};
     },
-    flush,
+    // Kolory dla gry bez kolorów (zapis ze starszej wersji strony), gracz niezalogowany.
+    async colorize(game){
+      if(!client)return {error:'offline'};
+      const r=await call('check_guess',{p_day:game.day,p_words:game.guesses});
+      if(r.error)return {error:onlineError(r.error),invalid:r.error.code==='22023'};
+      return {game:{...game,results:r.data.results,status:r.data.status,answer:r.data.status==='won'?game.guesses[game.guesses.length-1]:null}};
+    },
+    // Stan po zalogowaniu: gra z konta, a gdy jej nie ma, lokalne próby odtworzone po kolei na serwerze.
+    async syncGame(local,day){
+      if(!client||!uid())return {};
+      const got=await call('get_game',{p_day:day});
+      if(got.error)return {error:onlineError(got.error)};
+      if(got.data.status!=='none')return {game:fromServer(day,got.data)};
+      if(!local||local.day!==day||!local.guesses.length)return {};
+      const game={...emptyDaily(day),hard:!!local.hard};
+      for(const word of local.guesses){
+        const r=await call('play_guess',{p_day:day,p_word:word,p_hard:game.hard});
+        if(r.error)return {error:onlineError(r.error)};
+        applyGuess(game,word,r.data);
+      }
+      return {game,replayed:true};
+    },
     async setNick(nick){
       const {data,error}=await call('set_nick',{p_nick:nick});
       if(error)return {error:onlineError(error)};
@@ -369,7 +371,6 @@ function createOnline({store,dayNumber,loadClient,timeoutMs=8000}){
     async deleteAccount(){
       const {error}=await call('delete_my_account',{});
       if(error)return {error:onlineError(error)};
-      const all=store.get('sent',{});delete all[uid()];store.set('sent',all);store.set('pending',[]);
       await signOut();return {};
     },
     async rankingDay(day){const r=await call('ranking_day',{p_day:day});return r.error?{error:onlineError(r.error)}:{rows:r.data||[]}},
@@ -386,10 +387,11 @@ function newGame(m){
   mode=m;cur=[];
   if(m==='daily'){
     const n=dayNumber(),saved=store.get('daily',null);
-    game=(saved&&saved.day===n)?saved:{day:n,answer:dailyWord(n),guesses:[],status:'playing'};
+    game=(saved&&saved.day===n)?saved:emptyDaily(n);
+    if(!game.results){game.results=[];game.answer=null} // zapis ze starszej wersji: kolory dopisze serwer
     $('#sub').textContent='słowo dnia #'+n;
   }else{
-    game={day:0,answer:ANSWERS[Math.floor(Math.random()*ANSWERS.length)],guesses:[],status:'playing'};
+    game={day:0,answer:ANSWERS[Math.floor(Math.random()*ANSWERS.length)],guesses:[],results:[],status:'playing'};
     $('#sub').textContent='trening';
   }
   $('#mDaily').setAttribute('aria-pressed',m==='daily');$('#mFree').setAttribute('aria-pressed',m==='free');
@@ -404,7 +406,7 @@ function renderBoard(){
   board.innerHTML='';
   for(let r=0;r<6;r++){
     const row=document.createElement('div');row.className='row';row.setAttribute('role','row');
-    const g=game.guesses[r],res=g?score(g,game.answer):null,letters=g?chars(g):(r===game.guesses.length?cur:[]);
+    const g=game.guesses[r],res=g?game.results[r]:null,letters=g?chars(g):(r===game.guesses.length?cur:[]);
     for(let c=0;c<5;c++){
       const t=document.createElement('div');t.className='tile';t.setAttribute('role','gridcell');
       if(letters[c]){t.textContent=letters[c];t.classList.add('filled')}
@@ -423,7 +425,7 @@ function paintCurrent(){
 const LAYOUT=[['q','w','e','r','t','y','u','i','o','p'],['a','s','d','f','g','h','j','k','l'],['enter','z','x','c','v','b','n','m','back'],['ą','ć','ę','ł','ń','ó','ś','ź','ż']];
 function keyState(){
   const st={},rank={miss:1,near:2,hit:3};
-  for(const g of game.guesses){const r=score(g,game.answer);chars(g).forEach((l,i)=>{if(!st[l]||rank[r[i]]>rank[st[l]])st[l]=r[i]})}
+  game.guesses.forEach((g,n)=>{const r=game.results[n];if(r)chars(g).forEach((l,i)=>{if(!st[l]||rank[r[i]]>rank[st[l]])st[l]=r[i]})});
   return st;
 }
 function renderKeys(){
@@ -463,8 +465,8 @@ function shake(){const row=board.children[game.guesses.length];row.classList.rem
 
 function hardModeError(word){
   const w=chars(word);
-  for(const g of game.guesses){
-    const r=score(g,game.answer),gl=chars(g);
+  for(const [n,g] of game.guesses.entries()){
+    const r=game.results[n],gl=chars(g);
     for(let i=0;i<5;i++)if(r[i]==='hit'&&w[i]!==gl[i])return `Litera ${gl[i].toUpperCase()} musi być na pozycji ${i+1}`;
     const need={};gl.forEach((l,i)=>{if(r[i]!=='miss')need[l]=(need[l]||0)+1});
     for(const l in need){if(w.filter(x=>x===l).length<need[l])return `Próba musi zawierać ${l.toUpperCase()}`}
@@ -472,22 +474,32 @@ function hardModeError(word){
   return null;
 }
 
-function submit(){
+async function submit(){
   if(cur.length<5){shake();toast('Za mało liter');return}
   const word=cur.join('');
   const known=VALID.has(word)||ANSWERS.includes(word);
-  if(settings.strict&&!known){shake();toast('Nie ma tego słowa w słowniku');return}
+  if((mode==='daily'||settings.strict)&&!known){shake();toast('Nie ma tego słowa w słowniku');return}
   if(settings.hard){const err=hardModeError(word);if(err){shake();toast(err);return}}
-  const rowIdx=game.guesses.length,res=score(word,game.answer),row=board.children[rowIdx];
+  const rowIdx=game.guesses.length,row=board.children[rowIdx];
   if(!rowIdx)game.hard=settings.hard; // tryb trudny ustala się przed pierwszą próbą
-  game.guesses.push(word);cur=[];busy=true;
+  busy=true;
+  let res,status,answer=game.answer;
+  if(mode==='daily'){
+    if(onlineReady)await onlineReady;
+    const r=await online.guess(game,word);
+    if(r.error){busy=false;shake();toast(r.error,3500);return}
+    res=r.result;status=r.status;answer=r.answer||(status==='won'?word:null);
+  }else{
+    res=score(word,game.answer);status=word===game.answer?'won':rowIdx===5?'lost':'playing';
+  }
+  game.guesses.push(word);game.results.push(res);game.answer=answer;cur=[];
   [...row.children].forEach((t,i)=>setTimeout(()=>{t.classList.add('flip');setTimeout(()=>t.classList.add(res[i]),250)},i*260));
   setTimeout(()=>{
     busy=false;renderKeys();
-    if(word===game.answer){game.status='won';row.classList.add('win');[...row.children].forEach((t,i)=>t.style.animationDelay=i*80+'ms');
+    if(status==='won'){game.status='won';row.classList.add('win');[...row.children].forEach((t,i)=>t.style.animationDelay=i*80+'ms');
       toast(['Genialnie!','Wspaniale!','Świetnie!','Bardzo dobrze!','Dobrze!','Uff, w ostatniej chwili!'][rowIdx]);finish()}
-    else if(game.guesses.length===6){game.status='lost';toast(game.answer.toUpperCase(),3500);finish()}
-    else if(!known&&!settings.strict&&!store.get('hintedUnknown',false)){store.set('hintedUnknown',true);toast('Tego słowa nie ma jeszcze w słowniku — próba przyjęta',3000)}
+    else if(status==='lost'){game.status='lost';if(game.answer)toast(game.answer.toUpperCase(),3500);finish()}
+    else if(!known&&mode!=='daily'&&!settings.strict&&!store.get('hintedUnknown',false)){store.set('hintedUnknown',true);toast('Tego słowa nie ma jeszcze w słowniku — próba przyjęta',3000)}
     save();
   },5*260+300);
 }
@@ -499,7 +511,7 @@ function finish(){
     stats.lastDay=game.day;store.set('stats',stats);
   }
   save();setTimeout(openStats,1600);
-  if(mode==='daily'&&online.user)online.submitGame(game,mode);
+  if(mode==='daily'){submitNote=online.user?'Wynik zapisany w rankingu':'Zaloguj się, żeby trafić do rankingu'+(game.status==='lost'?' i poznać hasło':'')+'.'}
 }
 
 /* modals */
@@ -507,18 +519,18 @@ function open(id){closeAll();$(id).hidden=false;const c=$(id).querySelector('[da
 function closeAll(){document.querySelectorAll('.scrim').forEach(s=>s.hidden=true)}
 document.querySelectorAll('.scrim').forEach(s=>s.addEventListener('click',e=>{if(e.target===s||e.target.closest('[data-close]'))closeAll()}));
 $('#bHelp').onclick=()=>open('#dHelp');$('#bStats').onclick=openStats;$('#bSet').onclick=()=>open('#dSet');
-$('#mDaily').onclick=()=>newGame('daily');$('#mFree').onclick=()=>newGame('free');
+$('#mDaily').onclick=()=>{if(!busy)newGame('daily')};$('#mFree').onclick=()=>{if(!busy)newGame('free')};
 
 function shareText(){
   const em={hit:settings.cb?'🟧':'🟩',near:settings.cb?'🟦':'🟨',miss:'⬛'};
   const head=mode==='daily'?`Słowik #${game.day}`:'Słowik (trening)';
   const n=game.status==='won'?game.guesses.length:'X';
-  return `${head} ${n}/6${settings.hard?'*':''}\n`+game.guesses.map(g=>score(g,game.answer).map(r=>em[r]).join('')).join('\n');
+  return `${head} ${n}/6${settings.hard?'*':''}\n`+game.results.map(r=>r.map(x=>em[x]).join('')).join('\n');
 }
 function openStats(){
   const res=$('#result');res.innerHTML='';
   if(game.status!=='playing'){
-    res.innerHTML=`<h2>${game.status==='won'?'Wygrana':'Tym razem nie'}</h2><p style="margin:0;color:var(--muted)">Szukane słowo:</p><p class="answer">${game.answer}</p>`+(mode==='daily'?`<p class="muted" id="submitNote" aria-live="polite">${esc(submitNote)}</p>`:'');
+    res.innerHTML=`<h2>${game.status==='won'?'Wygrana':'Tym razem nie'}</h2>${game.answer?`<p style="margin:0;color:var(--muted)">Szukane słowo:</p><p class="answer">${esc(game.answer)}</p>`:'<p style="margin:0;color:var(--muted)">Hasło poznasz po zalogowaniu.</p>'}`+(mode==='daily'?`<p class="muted" id="submitNote" aria-live="polite">${esc(submitNote)}</p>`:'');
   }
   const pct=stats.played?Math.round(stats.won/stats.played*100):0;
   $('#statNums').innerHTML=[[stats.played,'Gier'],[pct,'% wygranych'],[stats.streak,'Seria'],[stats.best,'Najdłuższa seria']].map(([v,l])=>`<div><b>${v}</b><span>${l}</span></div>`).join('');
@@ -585,6 +597,24 @@ function renderAccount(){
   if(u&&p&&!p.nick_confirmed){if(!dot)b.insertAdjacentHTML('beforeend','<i class="dot" aria-hidden="true"></i>')}else if(dot)dot.remove();
   if(u&&p){$('#acctNick').textContent=p.nick;$('#acctNote').textContent=p.nick_confirmed?'Twój nick jest widoczny w rankingu.':'Nick nie jest zatwierdzony, więc nie występujesz w rankingu. Twoje wyniki i tak się zapisują.'}
 }
+function setDaily(g){
+  store.set('daily',g);
+  if(mode==='daily'&&!busy){game=g;cur=[];renderBoard();renderKeys()}
+}
+// Po zalogowaniu stan gry dyktuje konto; lokalne próby są odtwarzane na serwerze, co daje też wynik w rankingu.
+async function syncDaily(){
+  const n=dayNumber(),r=await online.syncGame(store.get('daily',null),n);
+  if(r.error){toast(r.error,3500);return}
+  if(!r.game)return;
+  if(r.replayed&&r.game.status!=='playing'){submitNote='Wynik zapisany w rankingu';toast(submitNote)}
+  setDaily(r.game);
+}
+async function colorizeOld(){
+  if(online.user||mode!=='daily'||!needsColors(game))return;
+  const r=await online.colorize(game);
+  if(r.game)setDaily(r.game);
+  else if(r.invalid)setDaily(emptyDaily(dayNumber())); // próby spoza słownika ze starszej wersji
+}
 function openNick(suggestion){
   $('#nickIn').value=suggestion||'';$('#nickErr').textContent='';
   open('#dNick');$('#nickIn').focus();$('#nickIn').select();
@@ -596,11 +626,7 @@ online.onChange((type,data)=>{
     const asked=store.get('nickAsked',[]),id=online.user&&online.user.id;
     if(id&&!asked.includes(id)){store.set('nickAsked',asked.concat(id).slice(-5));openNick(data)}
   }
-  else if(type==='submitted'){
-    const msg=data.ok?(data.already?'Wynik na ten dzień był już w rankingu':'Wynik zapisany w rankingu'):data.message+(data.retry?' Spróbujemy ponownie później.':'');
-    toast(msg,data.ok?2000:3500);
-    if(data.day===game.day){submitNote=msg;const e=$('#submitNote');if(e)e.textContent=msg} // okno wyniku przykrywa krótki komunikat
-  }
+  else if(type==='signedIn')syncDaily();
   else if(type==='error')toast(data,3500);
 });
 
@@ -667,6 +693,7 @@ onlineReady=online.init().then(ok=>{
     history.replaceState(null,'',redirectTo());
   }
   renderAccount();
+  colorizeOld();
   return ok;
 });
 if(!store.get('seenHelp',false)){store.set('seenHelp',true);open('#dHelp')}

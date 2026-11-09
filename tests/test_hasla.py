@@ -1,5 +1,7 @@
 """Testy 1 i 2: words.js zgadza się z data/answers.txt, a każde hasło jest poprawne.
 
+Lista jest pulą do Treningu. Musi być posortowana: kolejność haseł dnia zna tylko baza.
+
 Uruchomienie: python tests/test_hasla.py
 """
 import re
@@ -25,6 +27,10 @@ def main() -> None:
         fail(f"words.js ma {len(js)} haseł, a data/answers.txt {len(txt)}. "
              "Przebuduj: python scripts/build_words.py slowa.txt")
     ok(f"words.js zgadza się z data/answers.txt ({len(txt)} haseł)")
+
+    if txt != sorted(txt):
+        fail("data/answers.txt musi być posortowany alfabetycznie, żeby nie zdradzać kolejności haseł dnia.")
+    ok("pula haseł jest posortowana")
 
     # 2. Każde hasło: 5 polskich liter, w VALID, bez powtórzeń
     bad = [(i, w) for i, w in enumerate(txt, 1) if not POLISH_5.fullmatch(w)]
