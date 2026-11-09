@@ -27,6 +27,7 @@ Strona: https://qbzomatique.github.io/slowik/ (GitHub Pages z gałęzi `main`, f
 - Kolorowanie prób obsługuje powtórzone litery dwuprzebiegowo (najpierw trafienia, potem litery na złym miejscu z limitem wystąpień). Po każdej zmianie funkcji `score` sprawdzić przypadki z powtórzeniami, np. `lalka`/`balon` → szare, zielone, zielone, szare, szare.
 - Stan gracza tylko w `localStorage` (klucze z prefiksem `slowik.`); każdy dostęp w try/catch. Zmiana domyślnych ustawień → nowy klucz (obecnie `settings2`), żeby nie nadpisać starych zapisów.
 - Słownik SJP.PL jest na licencji CC BY 4.0 / GPL 2: zachować przypisanie w README i w oknie „Jak grać”.
+- Odstępy od krawędzi ekranu tylko przez `--sait/--saib/--sail/--sair`, nigdy bezpośrednio `env()`; uwzględniają paski Discorda.
 - Kolory przez zmienne CSS w `:root`, z wersją ciemną (`prefers-color-scheme` i `data-theme`). Strona musi działać na telefonie (~390 px szerokości).
 
 ## Konta i ranking (Supabase)
