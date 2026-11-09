@@ -122,7 +122,7 @@ textarea#sharebox{width:100%;margin-top:10px;font:13px/1.4 var(--body);backgroun
 .acct:hover{background:var(--key)}
 .acct .dot{position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:var(--near)}
 @media (max-width:479px){.acct{width:36px;padding:0;justify-content:center;border-color:transparent}.acct span{display:none}}
-.tabs{display:flex;gap:4px;margin:0 0 16px;border-bottom:1px solid var(--line)}
+.tabs{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 16px;border-bottom:1px solid var(--line)}
 .tabs button{border:0;background:transparent;padding:8px 10px;font-size:13px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
 .tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--fg)}
 .rank{width:100%;border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums}
@@ -182,6 +182,7 @@ textarea#sharebox{width:100%;margin-top:10px;font:13px/1.4 var(--body);backgroun
   <div id="result"></div>
   <div class="tabs" role="tablist" aria-label="Statystyki i rankingi">
     <button role="tab" id="tMine" data-tab="mine" aria-selected="true" aria-controls="pMine">Moje</button>
+    <button role="tab" id="tGuild" data-tab="guild" aria-selected="false" aria-controls="pGuild" hidden>Ten serwer</button>
     <button role="tab" id="tDay" data-tab="day" aria-selected="false" aria-controls="pDay">Ranking dnia</button>
     <button role="tab" id="tAll" data-tab="all" aria-selected="false" aria-controls="pAll">Ranking ogólny</button>
   </div>
@@ -192,6 +193,7 @@ textarea#sharebox{width:100%;margin-top:10px;font:13px/1.4 var(--body);backgroun
     <div class="dist" id="dist"></div>
     <div class="end" id="endRow"></div>
   </section>
+  <section id="pGuild" role="tabpanel" aria-labelledby="tGuild" hidden></section>
   <section id="pDay" role="tabpanel" aria-labelledby="tDay" hidden></section>
   <section id="pAll" role="tabpanel" aria-labelledby="tAll" hidden></section>
 </div></div>
@@ -379,6 +381,12 @@ function createOnline({store,dayNumber,loadClient,timeoutMs=8000}){
       if(error)return {error:onlineError(error)};
       await signOut();return {};
     },
+    async accessToken(){
+      if(!client)return null;
+      const {data}=await client.auth.getSession();
+      return data&&data.session?data.session.access_token:null;
+    },
+    async rankingGuild(guild,day){const r=await call('ranking_guild',{p_guild_id:guild,p_day:day});return r.error?{error:onlineError(r.error)}:{rows:r.data||[]}},
     async rankingDay(day){const r=await call('ranking_day',{p_day:day});return r.error?{error:onlineError(r.error)}:{rows:r.data||[]}},
     async rankingOverall(){const r=await call('ranking_overall',{p_limit:100});return r.error?{error:onlineError(r.error)}:{rows:r.data||[]}},
   };
@@ -555,7 +563,7 @@ function openStats(){
     };
     const a=$('#again');if(a)a.onclick=()=>{closeAll();newGame('free')};
   }
-  showTab('mine');
+  showTab(guildId&&game.status!=='playing'&&mode==='daily'?'guild':'mine');
   open('#dStats');
 }
 function tick(){const el=$('#cd');if(!el)return;const n=new Date(),m=new Date(n);m.setHours(24,0,0,0);
@@ -574,6 +582,7 @@ function applySettings(){document.body.classList.toggle('cb',settings.cb);$('#sS
 // W Discordzie gra działa w ramce za proxy: CDN jest blokowany, a Supabase dostępny pod zmapowaną ścieżką.
 const IN_DISCORD=new URLSearchParams(location.search).has('frame_id');
 const DISCORD_CLIENT_ID='1567394206391996457'; // identyfikator publiczny
+let guildId=null; // serwer potwierdzony przez Edge Function; null poza Discordem i w DM
 const API_URL=IN_DISCORD?location.origin+'/supabase':SUPABASE_URL;
 const SB_SRC=IN_DISCORD?'vendor/supabase-2.118.0.js':'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js';
 const SB_SRI='sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK';
@@ -667,32 +676,34 @@ $('#nickForm').onsubmit=async e=>{
 };
 
 function showTab(t){
-  [['mine','#tMine','#pMine'],['day','#tDay','#pDay'],['all','#tAll','#pAll']].forEach(([k,tab,panel])=>{
+  [['mine','#tMine','#pMine'],['guild','#tGuild','#pGuild'],['day','#tDay','#pDay'],['all','#tAll','#pAll']].forEach(([k,tab,panel])=>{
     $(tab).setAttribute('aria-selected',k===t);$(panel).hidden=k!==t;
   });
   if(t!=='mine')loadRanking(t);
 }
 document.querySelector('.tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)showTab(b.dataset.tab)});
 
-async function loadRanking(kind){
-  const el=$(kind==='day'?'#pDay':'#pAll'),n=dayNumber();
-  const title=kind==='day'?`<h2>Ranking dnia #${n}</h2>`:'<h2>Ranking ogólny</h2>';
-  el.innerHTML=title+'<p class="muted">Ładowanie…</p>';
+async function loadRanking(kind,quiet){
+  const el=$({day:'#pDay',all:'#pAll',guild:'#pGuild'}[kind]),n=dayNumber();
+  const title={day:`<h2>Ranking dnia #${n}</h2>`,all:'<h2>Ranking ogólny</h2>',guild:`<h2>Ten serwer: słowo #${n}</h2>`}[kind];
+  if(!quiet)el.innerHTML=title+'<p class="muted">Ładowanie…</p>';
   if(!online.ready&&onlineReady)await onlineReady;
   if(!online.ready){el.innerHTML=title+'<p class="muted">Ranking jest chwilowo niedostępny. Gra działa dalej.</p>';return}
-  const r=kind==='day'?await online.rankingDay(n):await online.rankingOverall();
+  const r=kind==='day'?await online.rankingDay(n):kind==='guild'?await online.rankingGuild(guildId,n):await online.rankingOverall();
   if(r.error){el.innerHTML=title+`<p class="muted">${esc(r.error)}</p>`;return}
   let hint='';
   if(!online.user)hint='<p class="muted">Zaloguj się przez Discorda, żeby trafić do rankingu.</p>';
   else if(online.profile&&!online.profile.nick_confirmed)hint='<p class="muted">Zatwierdź nick w menu konta, żeby trafić do rankingu.</p>';
-  if(!r.rows.length){el.innerHTML=title+`<p class="muted">${kind==='day'?'Nikt jeszcze dziś nie zgadł słowa.':'Ranking jest jeszcze pusty.'}</p>`+hint;return}
-  const rows=r.rows.map(x=>kind==='day'
+  if(!r.rows.length){el.innerHTML=title+`<p class="muted">${{day:'Nikt jeszcze dziś nie zgadł słowa.',all:'Ranking jest jeszcze pusty.',guild:'Nikt z tego serwera jeszcze dziś nie skończył gry.'}[kind]}</p>`+hint;return}
+  const rows=r.rows.map(x=>kind==='guild'
+    ?`<tr${x.is_me?' class="me"':''}><td class="n">${x.place}</td><td class="nick">${esc(x.nick)}</td><td class="n">${x.won?x.attempts:'X'}${x.hard_mode?'*':''}/6</td></tr>`
+    :kind==='day'
     ?`<tr${x.is_me?' class="me"':''}><td class="n">${x.place}</td><td class="nick">${esc(x.nick)}</td><td class="n">${x.attempts}${x.hard_mode?'*':''}</td></tr>`
     :`<tr${x.is_me?' class="me"':''}><td class="n">${x.place}</td><td class="nick">${esc(x.nick)}</td><td class="n">${x.wins}</td><td class="n">${x.win_pct}%</td><td class="n">${x.best_streak}</td><td class="n">${x.games}</td></tr>`).join('');
-  const head=kind==='day'
+  const head=kind!=='all'
     ?'<tr><th class="n">#</th><th>Nick</th><th class="n">Próby</th></tr>'
     :'<tr><th class="n">#</th><th>Nick</th><th class="n">Wygr.</th><th class="n">%</th><th class="n">Seria</th><th class="n">Gry</th></tr>';
-  const foot=kind==='day'?'<p class="muted">* tryb trudny (deklaracja gracza)</p>':'';
+  const foot=kind!=='all'?'<p class="muted">* tryb trudny (deklaracja gracza)</p>':'';
   el.innerHTML=title+`<table class="rank"><thead>${head}</thead><tbody>${rows}</tbody></table>`+foot+hint;
 }
 
@@ -704,18 +715,19 @@ async function startDiscord(){
     await discordLogin(sdk);
   }catch(e){toast('Połączenie z Discordem nie powiodło się',3500)}
 }
-// Sesja zapisana w ramce wystarcza; bez niej kod z SDK wymienia Edge Function.
+// Kod z SDK idzie do Edge Function przy każdym starcie: daje sesję, gdy jej brak, i potwierdza serwer.
 async function discordLogin(sdk){
   await onlineReady;
-  if(!online.ready||online.user)return;
+  if(!online.ready)return;
   const {code}=await sdk.commands.authorize({client_id:DISCORD_CLIENT_ID,response_type:'code',state:'',prompt:'none',scope:['identify','email']});
-  const res=await fetch(API_URL+'/functions/v1/activity-auth',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY},body:JSON.stringify({code})});
+  const res=await fetch(API_URL+'/functions/v1/activity-auth',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY},body:JSON.stringify({code,instance_id:sdk.instanceId,user_token:await online.accessToken()})});
   const out=await res.json().catch(()=>({}));
   if(!res.ok){toast(`Logowanie nie powiodło się (${out.step||res.status}): ${out.error||'błąd serwera'}`,6000);return}
   await sdk.commands.authenticate({access_token:out.discord_token});
-  const r=await online.setSession(out.session);
-  if(r.error)toast(r.error,4000);
+  if(out.session){const r=await online.setSession(out.session);if(r.error)toast(r.error,4000)}
+  if(out.guild_id){guildId=out.guild_id;$('#tGuild').hidden=false}
 }
+setInterval(()=>{if(guildId&&!$('#dStats').hidden&&!$('#pGuild').hidden)loadRanking('guild',true)},20000);
 if(IN_DISCORD){$('#bAcct').hidden=true;$('#acctOut').hidden=true;startDiscord()}
 
 applySettings();newGame('daily');

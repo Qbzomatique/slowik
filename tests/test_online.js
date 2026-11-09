@@ -138,6 +138,12 @@ const tests = {
     const r = await online.setSession({ access_token: 'a', refresh_token: 'b' });
     return (!r.error && same(client.tokens, { access_token: 'a', refresh_token: 'b' })) || `dostałem ${JSON.stringify(r)}`;
   },
+  async 'ranking serwera pyta o podany serwer i dzień'() {
+    const client = mockClient({ rpc: () => ({ data: [{ place: 1 }], error: null }) });
+    const { online } = await setup({ client });
+    const r = await online.rankingGuild('123', 5);
+    return (same(named(client, 'ranking_guild')[0][1], { p_guild_id: '123', p_day: 5 }) && r.rows.length === 1) || `dostałem ${JSON.stringify(client.calls)}`;
+  },
   async 'usunięcie konta wylogowuje'() {
     const { online, client } = await setup();
     client.login(); await tick(5);
