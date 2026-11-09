@@ -25,6 +25,7 @@ Polskie znaki to osobne litery: `ą` to nie `a`, a `ł` to nie `l`.
 - Tryb trudny i kolory dla daltonistów.
 - Sprawdzanie prób w słowniku SJP.PL (28 702 formy pięcioliterowe).
 - Opcjonalne logowanie przez Discorda: ranking dnia i ranking ogólny. Bez logowania gra działa w pełni.
+- **Discord Activity**: gra uruchamiana w kanale, z rankingiem serwera (etap testowy).
 
 ## Architektura
 
@@ -34,6 +35,9 @@ flowchart LR
   G -->|logowanie OAuth PKCE| D[Discord]
   G -->|supabase-js: funkcje RPC| S[(Supabase<br/>Auth, Postgres, RLS)]
   D -->|profil gracza| S
+  A[Discord Activity<br/>ten sam index.html w ramce] -->|proxy Discorda| S
+  A -->|kod logowania| E[Edge Function<br/>activity-auth]
+  E --> S
 ```
 
 Frontend nie ma kroku budowania. W repo jest tylko publiczny klucz publishable, a dane chroni Row Level Security. Wyniki zapisuje wyłącznie funkcja `submit_result`. Analiza, model danych, RODO, znane ograniczenia i wyniki testów RLS: [docs/backend.md](docs/backend.md).
@@ -49,7 +53,9 @@ scripts/candidates.py   wypisuje kandydatów na nowe hasła dnia
 tests/                  testy uruchamiane w GitHub Actions
 tests/manual/           ręczne testy RLS z konsoli przeglądarki
 supabase/migrations/    schemat bazy, polityki RLS i funkcje RPC
-docs/                   analizy: backend.md i ukrycie-hasel.md
+supabase/functions/     Edge Function logowania w Discord Activity
+vendor/                 biblioteki dla ramki Discorda, gdzie CDN jest blokowany
+docs/                   analizy: backend.md, ukrycie-hasel.md, discord-activity.md
 ```
 
 ## Słownik

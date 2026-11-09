@@ -121,6 +121,7 @@ Zasada: **minimum danych**. Trzymamy tylko to, co jest potrzebne do rankingu.
 | Identyfikator Discorda, nazwa, awatar (URL), **adres e-mail** | `auth.users` i `auth.identities` (zarządza Supabase Auth) | Logowanie. Supabase pobiera e-mail z Discorda obowiązkowo, a gra go nie używa ani nie kopiuje do swoich tabel. | Tylko administrator (panel Supabase) |
 | Nick i znacznik zatwierdzenia | `profiles.nick`, `profiles.nick_confirmed` | Wyświetlanie w rankingu | **Publicznie** w rankingach, ale dopiero po zatwierdzeniu przez gracza |
 | Wyniki słowa dnia: dzień, próby, liczba prób, wygrana, tryb trudny, czas zapisu | `results` | Ranking i walidacja wyniku | Próby: tylko właściciel. Liczby: publicznie przez rankingi. |
+| Identyfikator serwera Discord (tylko po uruchomieniu tam Activity), czas ostatniej wizyty | `guild_players` | Ranking serwera | Właściciel; nick i liczba prób widoczne dla graczy tego serwera |
 | Adres IP, user agent | Logi Supabase (API i Auth) | Bezpieczeństwo, diagnostyka | Administrator. Retencja na darmowym planie: 1 dzień (logi API/DB), 1 godzina (audyt Auth). |
 | Sesja (token) | localStorage przeglądarki, klucz `slowik.auth` | Utrzymanie zalogowania | Tylko przeglądarka gracza |
 

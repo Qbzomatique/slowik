@@ -13,7 +13,9 @@ Strona: https://qbzomatique.github.io/slowik/ (GitHub Pages z gałęzi `main`, f
 
 - `index.html`: cała gra (HTML, CSS, JS w jednym pliku, bez frameworków i bez kroku budowania).
 - `words.js`: generowany. `ANSWERS` (pula Treningu, posortowana) i `VALID` (dozwolone próby). Nie edytować ręcznie.
-- `docs/backend.md`: analiza backendu (wymagania, RODO, model danych, RLS, ograniczenia, wyniki testów RLS). `docs/ukrycie-hasel.md`: gra sprawdzana przez serwer.
+- `docs/backend.md`: analiza backendu (wymagania, RODO, model danych, RLS, ograniczenia, wyniki testów RLS). `docs/ukrycie-hasel.md`: gra sprawdzana przez serwer. `docs/discord-activity.md`: gra w Discordzie.
+- `supabase/functions/activity-auth/`: logowanie w ramce i potwierdzanie serwera. Wdraża autor w panelu Supabase.
+- `vendor/`: `supabase-js` i SDK Discorda dla ramki Discorda; aktualizować przez podmianę pliku.
 - `supabase/migrations/`: schemat, RLS i funkcje RPC, numerowane datą.
 - `tests/`: testy CI (Python i Node, bez zależności); `tests/manual/rls_console.js` to ręczne testy RLS.
 - `data/answers.txt`: alfabetyczna pula słów do Treningu, jedno na linię. Kolejność haseł dnia jest tylko w bazie.
@@ -38,6 +40,7 @@ Strona: https://qbzomatique.github.io/slowik/ (GitHub Pages z gałęzi `main`, f
 - Zmiany w bazie tylko nowym plikiem migracji, bez edycji wdrożonych. Autor zatwierdza migrację i sam ją uruchamia w SQL Editor.
 - Każda tabela ma RLS. Klient zapisuje wyłącznie przez funkcje RPC. Funkcje `SECURITY DEFINER` mają `search_path = ''`, pełne nazwy obiektów i jawne `grant execute`.
 - Rankingi pokazują tylko nick i liczby, wyłącznie dla `nick_confirmed = true`. Nigdy `user_id` ani prób.
+- W Discord Activity (`IN_DISCORD`) żadnych zasobów spoza proxy: CDN jest blokowany, Supabase idzie przez `/supabase`. Identyfikatora serwera nie wolno brać od klienta, tylko z API Discorda w Edge Function. Sekrety Discorda tylko w Supabase Secrets.
 - Trening nie trafia do rankingu. Nicki escapować przed wstawieniem do HTML.
 - Niezalogowany nie dostaje hasła od serwera po przegranej. Wynik powstaje tylko z `play_guess`.
 - Kolorowanie jest w dwóch miejscach: `score` w `index.html` (Trening) i `private.score` w SQL. Zmiana wymaga obu i `supabase/tests/score.sql`.
@@ -47,9 +50,8 @@ Strona: https://qbzomatique.github.io/slowik/ (GitHub Pages z gałęzi `main`, f
 
 1. Pełna polityka prywatności (L9) przed publicznym ogłoszeniem rankingów.
 2. Kopie zapasowe bazy (L6).
-3. Bot Discorda ze slash-komendami i dziennym postem, ranking serwera.
-4. Discord Activity (gra uruchamiana w Discordzie).
-5. Kolejne gry: polski odpowiednik Krilliona (rzadkie odpowiedzi, lematyzacja np. Morfeuszem), Connections.
+3. Weryfikacja aplikacji Discord (L15), potem bot z dziennym postem.
+4. Kolejne gry: polski odpowiednik Krilliona (rzadkie odpowiedzi, lematyzacja np. Morfeuszem), Connections.
 
 ## Commity
 
