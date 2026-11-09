@@ -1,0 +1,16 @@
+/* Wspólny wygląd polityki prywatności i regulaminu; kolory jak w grze. */
+:root{--bg:#F3F5F9;--surface:#FFFFFF;--fg:#17202D;--muted:#5E6878;--line:#CBD2DD;--accent:#2B5BD7;--draft:#FBE9C6}
+@media (prefers-color-scheme:dark){:root{--bg:#0E131B;--surface:#171E29;--fg:#E7EBF1;--muted:#97A1B2;--line:#2E3847;--accent:#7EA2FF;--draft:#4A3A16;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:680px;margin:0 auto;padding:32px 16px 48px}
+h1{font-size:28px;line-height:1.2;margin:0 0 4px}
+h2{font-size:18px;margin:28px 0 8px}
+p,ul{margin:0 0 12px}
+ul{padding-left:20px}
+a{color:var(--accent)}
+.muted{color:var(--muted);font-size:14px}
+.draft{background:var(--draft);padding:10px 12px;border-radius:8px;font-size:14px}
+table{width:100%;border-collapse:collapse;font-size:14px;margin:0 0 12px;display:block;overflow-x:auto}
+th,td{text-align:left;vertical-align:top;padding:8px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:500}

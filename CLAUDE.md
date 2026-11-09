@@ -44,6 +44,7 @@ Strona: https://qbzomatique.github.io/slowik/ (GitHub Pages z gałęzi `main`, f
 - Trening nie trafia do rankingu. Nicki escapować przed wstawieniem do HTML.
 - Niezalogowany nie dostaje hasła od serwera po przegranej. Wynik powstaje tylko z `play_guess`.
 - Kolorowanie jest w dwóch miejscach: `score` w `index.html` (Trening) i `private.score` w SQL. Zmiana wymaga obu i `supabase/tests/score.sql`.
+- Zmiana zbieranych danych lub dostawców wymaga aktualizacji `polityka-prywatnosci.html`.
 - Znane ograniczenia: `docs/backend.md` (rozdział 8) i `docs/ukrycie-hasel.md` (rozdział 4).
 
 ## Plany (kolejność orientacyjna)
