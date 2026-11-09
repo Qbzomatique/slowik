@@ -1,6 +1,6 @@
 # Słowik: ukrycie haseł dnia
 
-Dokument analityczny. Wersja 1.3, 9 listopada 2026. Status: **zaakceptowany (wariant A)**. Rozwija ograniczenia L1–L3 z [backend.md](backend.md).
+Dokument analityczny. Wersja 1.4, 9 listopada 2026. Status: **zaakceptowany (wariant A)**. Rozwija ograniczenia L1–L3 z [backend.md](backend.md).
 
 ## 1. Problem
 
@@ -90,3 +90,26 @@ Liczenie kolorów w SQL musi dawać te same wyniki co funkcja `score` z gry. Spr
 | 2 | Testy SQL na produkcyjnej bazie (lista S), jeszcze bez zmiany gry | Razem |
 | 3 | Frontend: próby przez RPC, `words.js` bez kolejności, testy CI | Asystent |
 | 4 | Workflow podtrzymujący, aktualizacja `backend.md`, README, CLAUDE.md | Asystent |
+
+## 7. Wyniki testów
+
+Przebieg 9 listopada 2026, na produkcyjnym projekcie. S1–S13: skrypt `tests/manual/gra_console.js` jako zalogowany gracz. Kolorowanie i reguły trybu trudnego: `supabase/tests/score.sql`.
+
+| # | Scenariusz | Wynik |
+|---|---|---|
+| S1 | Stary zapis wyniku (`submit_result`) wyłączony | ✅ |
+| S2 | Słowo spoza słownika odrzucone | ✅ |
+| S3 | Dzień poza oknem odrzucony | ✅ |
+| S4 | Zalogowany nie może użyć `check_guess` | ✅ |
+| S5 | Hasło nie pada przed końcem gry | ✅ |
+| S6 | Serwer zwraca kolory | ✅ |
+| S7 | Po 6 próbach przegrana i hasło dla zalogowanego | ✅ |
+| S8 | Siódma próba odrzucona | ✅ |
+| S9 | `get_game` zwraca stan gry | ✅ |
+| S10 | Wynik powstaje z `play_guess` | ✅ |
+| S11 | Bezpośredni insert do `games` zablokowany | ✅ |
+| S12 | Update gry zablokowany | ✅ |
+| S13 | Tabeli haseł nie ma w API | ✅ |
+| S14 | Zgodność kolorów SQL z grą (6 przypadków), reguły trybu trudnego | ✅ |
+| S15 | Niezalogowany: odmowa funkcji kont, brak hasła w odpowiedzi `check_guess`, także po 6 próbach | ✅ |
+| S16 | Tryb trudny w prawdziwej grze: serwer odrzuca próbę ignorującą zieloną literę | ⏳ do sprawdzenia w kolejnej grze |
