@@ -518,7 +518,7 @@ function shareText(){
 function openStats(){
   const res=$('#result');res.innerHTML='';
   if(game.status!=='playing'){
-    res.innerHTML=`<h2>${game.status==='won'?'Wygrana':'Tym razem nie'}</h2><p style="margin:0;color:var(--muted)">Szukane słowo:</p><p class="answer">${game.answer}</p>`;
+    res.innerHTML=`<h2>${game.status==='won'?'Wygrana':'Tym razem nie'}</h2><p style="margin:0;color:var(--muted)">Szukane słowo:</p><p class="answer">${game.answer}</p>`+(mode==='daily'?`<p class="muted" id="submitNote" aria-live="polite">${esc(submitNote)}</p>`:'');
   }
   const pct=stats.played?Math.round(stats.won/stats.played*100):0;
   $('#statNums').innerHTML=[[stats.played,'Gier'],[pct,'% wygranych'],[stats.streak,'Seria'],[stats.best,'Najdłuższa seria']].map(([v,l])=>`<div><b>${v}</b><span>${l}</span></div>`).join('');
@@ -574,7 +574,7 @@ function loadSupabase(){
 }
 
 const online=createOnline({store,dayNumber,loadClient:loadSupabase});
-let onlineReady=null;
+let onlineReady=null,submitNote='';
 
 function renderAccount(){
   const b=$('#bAcct'),u=online.user,p=online.profile;
@@ -597,8 +597,9 @@ online.onChange((type,data)=>{
     if(id&&!asked.includes(id)){store.set('nickAsked',asked.concat(id).slice(-5));openNick(data)}
   }
   else if(type==='submitted'){
-    if(data.ok)toast(data.already?'Wynik na ten dzień był już w rankingu':'Wynik zapisany w rankingu');
-    else toast(data.message+(data.retry?' Spróbujemy ponownie później.':''),3500);
+    const msg=data.ok?(data.already?'Wynik na ten dzień był już w rankingu':'Wynik zapisany w rankingu'):data.message+(data.retry?' Spróbujemy ponownie później.':'');
+    toast(msg,data.ok?2000:3500);
+    if(data.day===game.day){submitNote=msg;const e=$('#submitNote');if(e)e.textContent=msg} // okno wyniku przykrywa krótki komunikat
   }
   else if(type==='error')toast(data,3500);
 });
