@@ -1,6 +1,6 @@
 # Słowik: ukrycie haseł dnia
 
-Dokument analityczny. Wersja 1.0, 9 listopada 2026. Status: **do akceptacji**. Rozwija ograniczenia L1–L3 z [backend.md](backend.md).
+Dokument analityczny. Wersja 1.1, 9 listopada 2026. Status: **zaakceptowany (wariant A)**. Rozwija ograniczenia L1–L3 z [backend.md](backend.md).
 
 ## 1. Problem
 
@@ -70,7 +70,7 @@ Liczenie kolorów w SQL musi dawać te same wyniki co funkcja `score` z gry. Spr
 
 | # | Ograniczenie | Skutek | Decyzja |
 |---|---|---|---|
-| L10 | Niezalogowany może sprawdzać próby przez `check_guess`, poznać hasło i zagrać potem na koncie | Oszustwo nadal możliwe, ale wymaga celowego działania, a wynik wymaga zgadywania jak w grze | Akceptujemy. Pełna ochrona to wariant C. |
+| L10 | `check_guess` jest bez stanu i zwraca hasło przy 6 próbach, więc jedno zapytanie z 6 dowolnymi słowami ujawnia hasło. Potem można zagrać na koncie. | Zdeterminowany oszust nadal może wygrać w 1 próbie. Etap zatrzymuje podgląd w `words.js` i zmyślone wyniki, a nie celowe obejście. | Akceptujemy, bo przegrany niezalogowany gracz powinien poznać hasło, a drugie konto (L11) daje to samo. Ostrzejsza ochrona: wariant C. |
 | L11 | Drugie konto Discord do rozpoznania hasła | Jak L10 | Akceptujemy |
 | L12 | Okno ±1 dzień pozwala zagrać słowo „jutrzejsze” wcześniej | Gracz może poznać hasło kilka godzin przed innymi | Akceptujemy ze względu na strefy czasowe |
 | L13 | Brak limitu wywołań RPC | Masowe odpytywanie | Monitoring w panelu, limity później |

@@ -1,0 +1,136 @@
+-- Hasła dnia poza zasięgiem API. Schemat private nie jest wystawiony przez PostgREST,
+-- a role klienta nie mają do niego prawa USAGE. Opis: docs/ukrycie-hasel.md.
+-- Wklejona lista to dotychczasowa, publiczna kolejność z data/answers.txt.
+
+create schema private;
+revoke all on schema private from public, anon, authenticated;
+
+create table private.answers (
+  day  integer primary key check (day >= 1),
+  word text not null unique check (word ~ '^[a-ząćęłńóśźż]{5}$')
+);
+alter table private.answers enable row level security; -- bez polityk: dostęp tylko dla właściciela
+
+-- Dni minione, dzisiejszy i jutrzejszy zachowują hasła (jutro: zapas na strefy czasowe).
+-- Dalsze dni dostają kolejność wylosowaną tutaj przez bazę; nikt jej nie zna ani nie zapisuje w repo.
+insert into private.answers (day, word)
+with old as (
+  select t.word, row_number() over (order by t.pos)::integer as ord
+  from regexp_split_to_table($words$
+dzwon oliwa łatwy zaspa taśma trawa dziób kufer gadać zboże kakao kocyk pirat sport rynek
+pchać stryj złoty temat nalot zgoda kobra pedał tęcza szron śnieg willa ważka osoba motyl
+hasło punkt kwiat tuzin laska wódka trąba życie godło jazda skała worek serek trend dymić
+wózek bufet niebo lekki kubek bluza arbuz cisza język barwa zjeść balon hamak sukno szlak
+bania biały baton żurek wujek konik filtr bryła kleks ogień robić teren obiad góral kibic
+parów pobyt kasza torba kłoda patyk mówić epoka wrona piana zapis koala front opera napój
+kwota rejon flota obawa wstać kubeł komin rumak stary lasso mnich komar umowa smoła śliwa
+dzień owoce obraz maska zapał rubin drozd owies tukan serce kajak potok szyba nurek deska
+rondo kupić jutro biuro talia łapać wazon wałek młody okres pomoc kawka łapka salon nasyp
+klucz rekin prawo marsz kurek budka nerka bęben linia dzban garaż kefir sroka tunel zawód
+tytuł metal bawić bilet zając lampa wołać łydka latać kanał plaża włosy tasak indyk fraza
+uczyć żeton butla bigos ocean dusza marka metro dolar sosna lalka harfa gwizd blask cegła
+bitwa mucha cudny poród sanki akcja dobro złoto drzwi armia seria miska wojna palić gałąź
+konar mebel szyfr wdowa zjazd stado babka wagon magik kulka obrus motor wanna delta winda
+siano lizak gruby ulica korek bagno nauka jajko poeta strój błoto trasa świat pudel kucyk
+ikona dukat kokos gniew rozum pająk burza piłka krzyk suchy chleb szafa ławka medal model
+morze rzeka wątek ranek nosić matka nożyk palma wizja proca pisać fajka mocny droga umysł
+zwrot dąbek pióro wzrok bomba wapno scena sznur sufit pokój mazur zegar rabat wiatr chłop
+żółty mądry polka forma obcas ładny sarna efekt wybór karma kupno gołąb wolny plecy gonić
+środa krowa wąski kreda ślepy alarm iskra plama grosz kółko umieć pyłek wyspa lasek grupa
+szpak bajka brzeg mleko rzepa rower klasa masło runda cichy dziki zimno katar nitka zupka
+zimny kiosk brama tempo kawał dymek album sztab kopia kolej maszt dobry fotel obłok atlas
+konto płyta adres tarta chata rogal banan wełna pieśń nosek wieża guzik łyżka rzęsa kopać
+jasny ściek pukać słony praca gumka melon córka kamyk pokaz radio pilot szkło pizza ciało
+wydra pazur teatr domek panna śruba pożar sonda chory lubić żyłka układ skóra zamek cyfra
+firma ideał napad jodła miara renta kotek lider start bułka flaga broda limit półka karta
+akord pasta szary słoik dynia muzyk kuzyn dawać orzeł cytat basen rosół warta wafel sanie
+tenis koszt pełny hotel pasja nazwa tafla wyraz zebra zarys twarz palec urlop równy kabel
+groch mydło magia widok kłaść ostry zbiór anioł padać wyjść szept kraść zorza barek skarb
+honor pudło długi zakaz słowo mięso szyja ganić kozak narty pasek mamut ogród trzon panda
+warga okręt omlet pewny kreta zmora towar dawka głupi kolor sokół kogut trwać dieta wozić
+walec widły wiara jeleń stopa notes perła łódka farba sklep wydma napis balet wynik lista
+nawyk burak sonet ramię ćwiek walka pomóc pałac wrzos rybak aktor mapka imbir autor posąg
+olcha lilia krzak gęsty robot słaby osika utkać kuper beret sycić kowal zadra saper pniak
+mirra połów mokry dodać lotus humor impet zajść ważny odłam taran argon bolec lokum kolka
+lśnić gibki ekipa fatum uroda ogląd tacka damka filet mokka fanka robak ustać chwyt skraj
+opcja ksero wysyp mówca ryjek wasal wgląd brzęk spław wigor nikły broić forum łamać fałda
+wnęka flama magma berło zakup flara tułów kebab tulić witać fagot bujda leżak zalew zefir
+struś krzem gusła dubel kulas tkwić ludek larwa lanca łasić rynna filia płaca klask obwód
+łazić ślizg chaos plusz sfera dolać buzia prasa finka zguba stówa czapa budyń zużyć sierp
+paser dioda zmowa dinar lizus obmyć napęd przód botki synuś skecz pylon kuleć tupet mężny
+miraż klaun zamęt sepia gruda grzyb hiena popić rękaw drgać żwawy akryl goguś kotuś pegaz
+becik baran sapać kąpać feler chała wiwat tomik padół mumia syrop odlew pismo piwny spina
+denko klomb nylon hojny tonąć brydż błysk salto krach napar puder pręga kuter wyrąb liana
+polać beton furka mamić legat skaut grzać wywód nabyć mural czart chuch lizać gibon fauna
+welon komis uprać susza danie igloo skłon kocię kadra kącik celny szosa bryza nacja nawis
+motel obrót agent kokon ferma aloes żniwa łopot nabić bawół zakon kudły lwica felga kwoka
+nalać nocka cięty laluś nieść puzon dziwo niuch miano gracz rotor kaska raper bajer bufor
+żabka piach proza klika lejek ziele obrać luzak lazur bobas śpiew kasta tatar furia czuły
+ubogi cenić oddać ulewa regał folia człon okład kombi uciec tajga panel kubik obieg pobór
+grunt pikać cokół szpic dudek żywot schab pleść biwak waleń oczny tubka gotyk manko dobór
+wymyć spryt selen awizo szpan dowóz pałąk jacht tylny klacz sobór czerń łycha cynik świst
+potas rowek dzida mątwa alpak nieuk dyżur ścisk fresk ukrop papka wojak mania klips mlask
+dojść drżeć wyłaz koder cielę uszyć tabor dywan trema wyłom wymóc flesz silny żużel heros
+gamoń popis łajka dętka dolny sezon taras debet tyrać polar arena kapka wędka husar barka
+beksa lotos dumać modny golas rożek ukoić zdrój haust zasób barok osada wyrwa treść klapa
+upaść flirt mylić skrót fason farma konus kryza datek leżeć morał laser skory brona atest
+czort jeżyk zalać butny zmrok upływ druid heban konny minąć flaki fałsz popas odjąć saldo
+kąsek ganek gasić chudy łazik sadza hasać pauza koral żądny kojec horda juror bożek fiord
+breja krzew mamba nugat tumak gwara tupać freon szewc fotka syfon ustny minka niemy wyrok
+rewir poseł kucać kagan sopel gleba habit krepa etyka amant zbiec trzeć spływ wątły nożny
+górka wrzeć topić stwór prawy utarg gniot pikuś talon bidon lemur galon rysik motto bizon
+ścieg optyk wydać medyk topaz rożen obręb obora minus ranga czara wzbić garść pleśń walor
+tarot strąk bufon dotyk biker szopa fanty uciąć kitel tonik peron ubiór kępka rózga garda
+bober rybka wypić wszyć farsz chwat plebs łaska fikus bujać ekran chlor fizyk wakat nudny
+kulig butik splot jurta chrom skład supeł pętla lepki łupek rumba chlew golić gmach norma
+głowa sedes cierń wirek bidet bryja śledź marża pasmo kukła wybój łubin nabór gąska utwór
+totem bagaż glony jawor dbały cugle grill radar afisz tango mijać wąwóz seler łebek okrąg
+anons kisić wykuć gwint orzec cykor dysza letni rumor wkład pikap micha wypis podać dingo
+salsa netto gacek płowy solny wyjąć pępek detal antyk objąć bacik bańka lewus hokej maleć
+zapas bekas sypki kolec kroić ząbek stoik badyl farsa lepić wyżeł dozór slipy krępy uznać
+ruina kacyk pasza zgiąć kwant powóz rywal groza osioł kciuk pesto stłuc chłód aster górny
+proso nośny moher odpis koper zwada buhaj potop dziad okręg rzecz ograć golec otwór wiraż
+modem kaczy dacza rdzeń aneks masyw drwić dążyć ciuch klops próba pchła kilof winyl bazar
+kózka manna decha krupa hałas złoże udany dźwig urwis kazać suwak wywar łajba powab połać
+zagon kleić palik rebus impas psalm gubić chłam wyrób uskok galop goleń drwal tępić cofać
+atłas węzeł kania zjawa pupil pułap szram łepek palto tajny wdech ocena rolka sypać żądło
+nisza toner cypel opaść psiak sesja linka lichy locha aport humus tarka klaps śluza zadać
+dołek deseń mazak kapeć gmina tapir bitka klown slang dłuto tenor order homar urząd ugoda
+robol awans murek gąbka szyna sedno nóżka nagus hulać grono oblać pyton moped narta zrzut
+kwarc mlecz pasaż łowić lejce derka bydło łobuz bywać pigwa lipka krata zrazy nadać wiata
+uczeń skroń ustęp futro wstęp łóżko wieko wejść piżmo żmija kusić toast żądać różny misio
+afekt gałka rampa banał cudak dawny pozór kusza kozik kosić zawór dorsz ugiąć baner ramka
+łyżwy stróż awers lipny lotny polny cecha pięta pogoń słoma karat posag upiąć walet samba
+mahoń idiom komik wiano barak krzta polot godny finał jawny popyt sitko rulon zenit senny
+tuner sójka bubel podaż pękać kamea sława sumka smuga ogier tupot pusty blady burek odpad
+bekon bolid rodak rączy miedź kanar bilon racja licho bemol wężyk szlam autko gniły synek
+skręt spaść krzyż fakir masaż zgryz wziąć skala możny pompa tytan motyw żuraw kanon odzew
+szata łania kijek psina pilny pałka późny okryć silos deser tabun dycha skwer burka kpina
+obrys nimfa skąpy cenny facet bordo domyć dzicz zgaga naród wywóz salwa żywić fuzja kołek
+małpa bulwa kolba wymóg kocur kryty pisak napór zwiać ukryć cewka kalać haker pacan znany
+gekon klosz kolia najść szyld pampa patos berek ogrom zamsz strop igrać psota notka żebro
+tekst trakt bonus zająć poryw wydmy niski sfora wjazd gryps belka pozer lokaj pojąć credo
+cudzy pajac krtań cywil rabuś sakwa suseł wleźć remis skwar sauna salut butan jęzor seans
+ruszt zadąć sezam wykop rygor grota upiec wokal kujon donos urwać tutor goryl setka wpaść
+rubel bąbel adept zacny kupka pójść uwaga lajka metka afera zapęd ciecz leśny opoka chart
+burta lisek cacko plusk gryźć ukłon pytać doker lokal cekin onyks wzlot zgrać packa wykaz
+elita glanc olimp piegi badać tuman kupon bosak reset kalif wieźć baron klerk mięta kufel
+miecz wodór nająć kolaż drops parka skryć ekler straż bucik numer brnąć moduł słuch kalka
+nucić macka umiar szmer tiara wykup sadło smycz bobek karny kapać wrogi woźny tykwa wabik
+kolos całus ptasi mazać hipis łatać kiwać halka wylać metan zmysł rąbek błona dowód ksywa
+wkręt aleja flora wylot lotka wąsik kafel misja jogin slajd jadło ognik kwicz kręty nutka
+cymes zdjąć werwa myjka parny odbyć szpon zszyć setny miech malec spiąć bujny wozik łezka
+opiec leser salka wyjec draka nawóz filar klima henna łosoś srogi słota drzeć zięba czoło
+ułuda foton szkic dumny diuna nafta ubrać tkacz łatka rąbać audyt
+$words$, '\s+') with ordinality as t(word, pos)
+  where t.word <> ''
+),
+cut as (select public.day_number() + 1 as n),
+kept as (select o.ord as day, o.word from old o, cut c where o.ord <= c.n),
+rest as (
+  select o.word, row_number() over (order by random())::integer as rn
+  from old o, cut c where o.ord > c.n
+)
+select k.day, k.word from kept k
+union all
+select c.n + r.rn, r.word from rest r, cut c;
